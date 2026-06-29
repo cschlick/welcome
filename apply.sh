@@ -26,10 +26,6 @@ LOG="$LOG_DIR/apply-$(date +%Y%m%d-%H%M%S).log"
 
 EXTRA=()
 [ "${IMAGE_BUILD:-0}" = 1 ] && EXTRA+=(-e image_build=true)
-# Locally-set secrets (e.g. user_password_hash from set-emergency-password.sh).
-# Gitignored, never committed; absent on a fresh clone (then user stays
-# password-less). Loaded as extra-vars so it wins over group_vars defaults.
-[ -f "$ROOT/ansible/secrets.local.yml" ] && EXTRA+=(-e "@$ROOT/ansible/secrets.local.yml")
 
 sudo apt-get update && sudo apt-get install -y ansible
 ansible-galaxy collection install -r requirements.yml
