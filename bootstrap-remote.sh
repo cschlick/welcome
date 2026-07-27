@@ -78,19 +78,24 @@ REMOTE_HOSTNAME="/tmp/welcome-hostname-$RELEASE_ID"
 REMOTE_GREASEWOOD_TOKEN="/tmp/welcome-greasewood-$RELEASE_ID.token"
 
 ssh "${SSH_OPTIONS[@]}" "$TARGET" "umask 077 && mkdir '$REMOTE_STAGE'"
+RELEASE_ARCHIVE="$TEMP_DIR/release.tar.gz"
 tar \
   --exclude=.git \
   --exclude=logs \
-  -C "$ROOT" -czf - . |
-  ssh "${SSH_OPTIONS[@]}" "$TARGET" "tar -xzf - -C '$REMOTE_STAGE'"
+  -C "$ROOT" -czf "$RELEASE_ARCHIVE" .
+ssh "${SSH_OPTIONS[@]}" "$TARGET" \
+  "tar -xzf - -C '$REMOTE_STAGE'" < "$RELEASE_ARCHIVE"
 ssh "${SSH_OPTIONS[@]}" "$TARGET" \
   "umask 077 && cat > '$REMOTE_VARS'" < "$DECRYPTED_VARS"
-printf '%s' "$SYSTEM_HOSTNAME" |
-  ssh "${SSH_OPTIONS[@]}" "$TARGET" \
-    "umask 077 && cat > '$REMOTE_HOSTNAME'"
-printf '%s' "$GREASEWOOD_TOKEN" |
-  ssh "${SSH_OPTIONS[@]}" "$TARGET" \
-    "umask 077 && cat > '$REMOTE_GREASEWOOD_TOKEN'"
+HOSTNAME_FILE="$TEMP_DIR/hostname"
+GREASEWOOD_TOKEN_FILE="$TEMP_DIR/greasewood-token"
+printf '%s' "$SYSTEM_HOSTNAME" > "$HOSTNAME_FILE"
+printf '%s' "$GREASEWOOD_TOKEN" > "$GREASEWOOD_TOKEN_FILE"
+chmod 0600 "$HOSTNAME_FILE" "$GREASEWOOD_TOKEN_FILE"
+ssh "${SSH_OPTIONS[@]}" "$TARGET" \
+  "umask 077 && cat > '$REMOTE_HOSTNAME'" < "$HOSTNAME_FILE"
+ssh "${SSH_OPTIONS[@]}" "$TARGET" \
+  "umask 077 && cat > '$REMOTE_GREASEWOOD_TOKEN'" < "$GREASEWOOD_TOKEN_FILE"
 unset GREASEWOOD_TOKEN
 
 REMOTE_ARGS=()
