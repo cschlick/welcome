@@ -27,7 +27,11 @@ After verifying Greasewood access, make SSH mesh-only and persist that setting:
 ./bootstrap-remote.sh user@SERVER_IP --mesh-only-ssh
 ```
 
-For an existing Debian router, preserve its firewall, interfaces, forwarding,
+> **Router profile status:** This is an untested, unfinished stub. Do not use it
+> on an important router without console access, a verified backup, and careful
+> review of a check-mode run.
+
+The intended router profile preserves its firewall, interfaces, forwarding,
 DNS, mounts, services, groups, and kernel modules:
 
 ```bash
