@@ -51,12 +51,30 @@ fi
 ansible-vault decrypt "${VAULT_ARGS[@]}" --output "$DECRYPTED_VARS" "$VAULT"
 chmod 0600 "$DECRYPTED_VARS"
 
+read -r -p "Hostname (press Enter to keep the current hostname): " SYSTEM_HOSTNAME
+if [ -n "$SYSTEM_HOSTNAME" ]; then
+  if [ "${#SYSTEM_HOSTNAME}" -gt 253 ] ||
+    [[ ! "$SYSTEM_HOSTNAME" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] ||
+    [[ "$SYSTEM_HOSTNAME" == *..* ]]; then
+    echo "bootstrap-remote.sh: invalid hostname" >&2
+    exit 2
+  fi
+  IFS=. read -r -a HOSTNAME_LABELS <<< "$SYSTEM_HOSTNAME"
+  for hostname_label in "${HOSTNAME_LABELS[@]}"; do
+    [ "${#hostname_label}" -le 63 ] || {
+      echo "bootstrap-remote.sh: hostname labels must be at most 63 characters" >&2
+      exit 2
+    }
+  done
+fi
+
 read -r -s -p "Greasewood invite token (press Enter to skip): " GREASEWOOD_TOKEN
 echo
 
 RELEASE_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 REMOTE_STAGE="/tmp/welcome-stage-$RELEASE_ID"
 REMOTE_VARS="/tmp/welcome-vars-$RELEASE_ID.yml"
+REMOTE_HOSTNAME="/tmp/welcome-hostname-$RELEASE_ID"
 REMOTE_GREASEWOOD_TOKEN="/tmp/welcome-greasewood-$RELEASE_ID.token"
 
 ssh "${SSH_OPTIONS[@]}" "$TARGET" "umask 077 && mkdir '$REMOTE_STAGE'"
@@ -67,6 +85,9 @@ tar \
   ssh "${SSH_OPTIONS[@]}" "$TARGET" "tar -xzf - -C '$REMOTE_STAGE'"
 ssh "${SSH_OPTIONS[@]}" "$TARGET" \
   "umask 077 && cat > '$REMOTE_VARS'" < "$DECRYPTED_VARS"
+printf '%s' "$SYSTEM_HOSTNAME" |
+  ssh "${SSH_OPTIONS[@]}" "$TARGET" \
+    "umask 077 && cat > '$REMOTE_HOSTNAME'"
 printf '%s' "$GREASEWOOD_TOKEN" |
   ssh "${SSH_OPTIONS[@]}" "$TARGET" \
     "umask 077 && cat > '$REMOTE_GREASEWOOD_TOKEN'"
@@ -79,7 +100,7 @@ for arg in "$@"; do
 done
 
 ssh "${SSH_OPTIONS[@]}" -tt "$TARGET" \
-  "bash '$REMOTE_STAGE/launch-detached.sh' '$REMOTE_STAGE' '$REMOTE_VARS' '$REMOTE_GREASEWOOD_TOKEN' '$RELEASE_ID' ${REMOTE_ARGS[*]:-}"
+  "bash '$REMOTE_STAGE/launch-detached.sh' '$REMOTE_STAGE' '$REMOTE_VARS' '$REMOTE_HOSTNAME' '$REMOTE_GREASEWOOD_TOKEN' '$RELEASE_ID' ${REMOTE_ARGS[*]:-}"
 
 echo
 echo "The SSH session may disconnect while networking changes."

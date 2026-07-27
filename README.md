@@ -17,8 +17,9 @@ nano ~/.config/welcome/vault-password
 ./bootstrap-remote.sh user@SERVER_IP
 ```
 
-Enter a Greasewood invite token when prompted to join the mesh, or press Enter
-to install Greasewood without joining.
+Enter the server hostname when prompted, then optionally enter a Greasewood
+invite token. The hostname is set before the server joins the mesh. Press Enter
+at either prompt to keep the current hostname or skip joining.
 
 The playbook continues locally on the server if SSH is interrupted. After
 reconnecting, check its result:
