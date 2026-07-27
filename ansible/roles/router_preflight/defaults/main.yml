@@ -1,0 +1,3 @@
+---
+router_require_ipv4_forwarding: true
+router_require_nftables: true

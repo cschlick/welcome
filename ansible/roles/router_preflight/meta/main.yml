@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  role_name: router_preflight
+  author: cschlick
+  description: Read-only safety checks before hardening an existing router
+  license: MIT
+  min_ansible_version: "2.14"
+dependencies: []

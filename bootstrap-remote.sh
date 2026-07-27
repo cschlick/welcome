@@ -4,20 +4,26 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 <ssh-target> [--mesh-only-ssh] [-- <ansible-playbook args...>]" >&2
-  echo "Example: $0 user@203.0.113.10 --mesh-only-ssh" >&2
+  echo "Usage: $0 <ssh-target> [--profile host|router] [--mesh-only-ssh] [-- <ansible-playbook args...>]" >&2
+  echo "Example: $0 user@203.0.113.10 --profile router" >&2
 }
 
 [ "$#" -ge 1 ] || { usage; exit 2; }
 TARGET="$1"
 shift
 MESH_ONLY_SSH=0
+PROFILE=host
 PLAYBOOK_ARGS=()
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --mesh-only-ssh)
       MESH_ONLY_SSH=1
       shift
+      ;;
+    --profile)
+      [ "$#" -ge 2 ] || { usage; exit 2; }
+      PROFILE="$2"
+      shift 2
       ;;
     --)
       shift
@@ -32,6 +38,18 @@ while [ "$#" -gt 0 ]; do
 done
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[[ "$PROFILE" =~ ^[a-z0-9_-]+$ ]] || {
+  echo "bootstrap-remote.sh: invalid profile name" >&2
+  exit 2
+}
+if [ "$PROFILE" != host ] && [ ! -f "$ROOT/ansible/profiles/$PROFILE.yml" ]; then
+  echo "bootstrap-remote.sh: unknown profile: $PROFILE" >&2
+  exit 2
+fi
+if [ "$PROFILE" = router ] && [ "$MESH_ONLY_SSH" = 1 ]; then
+  echo "bootstrap-remote.sh: the router profile preserves its existing firewall; --mesh-only-ssh is unavailable" >&2
+  exit 2
+fi
 VAULT="$ROOT/ansible/vault.yml"
 [ -f "$VAULT" ] || { echo "Missing $VAULT" >&2; exit 1; }
 
@@ -123,7 +141,7 @@ for arg in "${PLAYBOOK_ARGS[@]}"; do
 done
 
 ssh "${SSH_OPTIONS[@]}" -tt "$TARGET" \
-  "bash '$REMOTE_STAGE/launch-detached.sh' '$REMOTE_STAGE' '$REMOTE_VARS' '$REMOTE_HOSTNAME' '$REMOTE_GREASEWOOD_TOKEN' '$MESH_ONLY_SSH' '$RELEASE_ID' ${REMOTE_ARGS[*]:-}"
+  "bash '$REMOTE_STAGE/launch-detached.sh' '$REMOTE_STAGE' '$REMOTE_VARS' '$REMOTE_HOSTNAME' '$REMOTE_GREASEWOOD_TOKEN' '$MESH_ONLY_SSH' '$PROFILE' '$RELEASE_ID' ${REMOTE_ARGS[*]:-}"
 
 echo
 echo "The SSH session may disconnect while networking changes."

@@ -27,6 +27,13 @@ After verifying Greasewood access, make SSH mesh-only and persist that setting:
 ./bootstrap-remote.sh user@SERVER_IP --mesh-only-ssh
 ```
 
+For an existing Debian router, preserve its firewall, interfaces, forwarding,
+DNS, mounts, services, groups, and kernel modules:
+
+```bash
+./bootstrap-remote.sh user@ROUTER_IP --profile router
+```
+
 The playbook continues locally on the server if SSH is interrupted. After
 reconnecting, check its result:
 

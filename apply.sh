@@ -21,6 +21,18 @@ LOG="$LOG_DIR/apply-$(date +%Y%m%d-%H%M%S).log"
 
 EXTRA=()
 [ "${IMAGE_BUILD:-0}" = 1 ] && EXTRA+=(-e image_build=true)
+PROFILE="${WELCOME_PROFILE:-host}"
+[[ "$PROFILE" =~ ^[a-z0-9_-]+$ ]] || {
+  echo "apply.sh: invalid WELCOME_PROFILE" >&2
+  exit 2
+}
+if [ "$PROFILE" != host ]; then
+  [ -f "profiles/$PROFILE.yml" ] || {
+    echo "apply.sh: unknown profile: $PROFILE" >&2
+    exit 2
+  }
+  EXTRA+=(-e "@profiles/$PROFILE.yml")
+fi
 [ -f local.yml ] && EXTRA+=(-e @local.yml)
 [ ! -f /etc/welcome/local.yml ] || EXTRA+=(-e @/etc/welcome/local.yml)
 [ -z "${WELCOME_SYSTEM_HOSTNAME:-}" ] ||

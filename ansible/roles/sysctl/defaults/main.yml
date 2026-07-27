@@ -4,3 +4,9 @@
 # so applying them inside a privileged container would mutate the host kernel.
 # Real hosts leave this true.
 sysctl_apply: true
+
+# Host profile defaults. Router profiles override forwarding and use loose
+# reverse-path filtering for legitimate asymmetric/multi-interface traffic.
+sysctl_ipv4_forwarding: 0
+sysctl_ipv6_forwarding: 0
+sysctl_rp_filter: 1

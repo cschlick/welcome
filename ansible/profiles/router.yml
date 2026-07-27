@@ -1,0 +1,28 @@
+---
+# Preserve router-owned networking and services while applying the controls
+# that are independent of packet forwarding and interface topology.
+welcome_profile: router
+
+# Preserve the router's active forwarding modes. Loose rp_filter still rejects
+# impossible sources without breaking asymmetric or policy-routed paths.
+sysctl_ipv4_forwarding: "{{ router_ipv4_forwarding.stdout }}"
+sysctl_ipv6_forwarding: "{{ router_ipv6_forwarding.stdout }}"
+sysctl_rp_filter: 2
+
+# These subsystems are topology/application policy owned by the router.
+nftables_manage: false
+networkd_manage: false
+resolved_manage: false
+mounts_manage: false
+group_prune_manage: false
+module_blacklist_manage: false
+disable_mdns_manage: false
+disable_cups_manage: false
+cloudinit_cleanup_manage: false
+
+# Install the useful base set, but never purge packages from a router.
+packages_remove: []
+
+# Read-only preflight requirements.
+router_require_ipv4_forwarding: true
+router_require_nftables: true

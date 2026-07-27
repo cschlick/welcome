@@ -6,8 +6,8 @@
 
 # Disable IP forwarding — this machine is not a router.
 # If it were, packets arriving on one interface would be forwarded out another.
-net.ipv4.ip_forward = 0
-net.ipv6.conf.all.forwarding = 0
+net.ipv4.ip_forward = {{ sysctl_ipv4_forwarding }}
+net.ipv6.conf.all.forwarding = {{ sysctl_ipv6_forwarding }}
 
 # Ignore ICMP echo requests sent to broadcast addresses.
 # These are used in Smurf amplification attacks: a spoofed broadcast ping
@@ -21,8 +21,8 @@ net.ipv4.icmp_ignore_bogus_error_responses = 1
 # Reverse path filtering: drop incoming packets whose source address would not
 # be routed back out the same interface. This defeats IP spoofing — an attacker
 # faking a source address will fail the return-path check and be dropped.
-net.ipv4.conf.all.rp_filter = 1
-net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.all.rp_filter = {{ sysctl_rp_filter }}
+net.ipv4.conf.default.rp_filter = {{ sysctl_rp_filter }}
 
 # Reject source-routed packets. Source routing lets the sender specify the
 # exact path a packet takes through the network, which can be used to bypass

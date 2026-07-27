@@ -6,8 +6,13 @@ VARS_FILE="${WELCOME_DECRYPTED_VARS_FILE:-}"
 HOSTNAME_FILE="${WELCOME_HOSTNAME_FILE:-}"
 GREASEWOOD_TOKEN_FILE="${WELCOME_GREASEWOOD_TOKEN_FILE:-}"
 MESH_ONLY_SSH="${WELCOME_MESH_ONLY_SSH:-0}"
+PROFILE="${WELCOME_PROFILE:-host}"
 [ "$MESH_ONLY_SSH" = 0 ] || [ "$MESH_ONLY_SSH" = 1 ] || {
   echo "detached-apply.sh: invalid mesh-only SSH setting" >&2
+  exit 2
+}
+[[ "$PROFILE" =~ ^[a-z0-9_-]+$ ]] || {
+  echo "detached-apply.sh: invalid profile" >&2
   exit 2
 }
 case "$VARS_FILE" in

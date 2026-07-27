@@ -7,8 +7,9 @@ UPLOADED_VARS="${2:-}"
 UPLOADED_HOSTNAME="${3:-}"
 UPLOADED_GREASEWOOD_TOKEN="${4:-}"
 MESH_ONLY_SSH="${5:-}"
-RELEASE_ID="${6:-}"
-shift 6 || true
+PROFILE="${6:-}"
+RELEASE_ID="${7:-}"
+shift 7 || true
 PLAYBOOK_ARGS=("$@")
 
 [[ "$RELEASE_ID" =~ ^[0-9]{8}T[0-9]{6}Z-[0-9]+$ ]] || {
@@ -20,6 +21,7 @@ PLAYBOOK_ARGS=("$@")
 [ "$UPLOADED_HOSTNAME" = "/tmp/welcome-hostname-$RELEASE_ID" ] || exit 2
 [ "$UPLOADED_GREASEWOOD_TOKEN" = "/tmp/welcome-greasewood-$RELEASE_ID.token" ] || exit 2
 [ "$MESH_ONLY_SSH" = 0 ] || [ "$MESH_ONLY_SSH" = 1 ] || exit 2
+[[ "$PROFILE" =~ ^[a-z0-9_-]+$ ]] || exit 2
 
 RELEASE="/opt/welcome/releases/$RELEASE_ID"
 RUNTIME_VARS="/run/welcome/vars-$RELEASE_ID.yml"
@@ -59,6 +61,7 @@ sudo ln -sfn "$RELEASE" /opt/welcome/current
 
 SYSTEMD_ENV=("--setenv=WELCOME_DECRYPTED_VARS_FILE=$RUNTIME_VARS")
 SYSTEMD_ENV+=("--setenv=WELCOME_MESH_ONLY_SSH=$MESH_ONLY_SSH")
+SYSTEMD_ENV+=("--setenv=WELCOME_PROFILE=$PROFILE")
 if sudo test -s "$RUNTIME_HOSTNAME"; then
   SYSTEMD_ENV+=("--setenv=WELCOME_HOSTNAME_FILE=$RUNTIME_HOSTNAME")
 fi

@@ -3,6 +3,9 @@
   hosts: all
   become: true
   roles:
+    - role: router_preflight
+      when: welcome_profile | default("host") == "router"
+      tags: [always, router_preflight]
     - role: hostname
       tags: [hostname]
     # Must precede ssh and group_prune: ensures user exists without changing
@@ -16,6 +19,7 @@
     - role: sysctl
       tags: [sysctl]
     - role: nftables
+      when: nftables_manage | default(true)
       tags: [nftables]
     - role: packages
       tags: [packages]
@@ -33,14 +37,18 @@
     - role: root_password
       tags: [root_password, accounts]
     - role: group_prune
+      when: group_prune_manage | default(true)
       tags: [group_prune]
     - role: networkd
+      when: networkd_manage | default(true)
       tags: [networkd]
     - role: resolved
+      when: resolved_manage | default(true)
       tags: [resolved]
     - role: coredump
       tags: [coredump]
     - role: mounts
+      when: mounts_manage | default(true)
       tags: [mounts]
     - role: unattended_upgrades
       tags: [unattended_upgrades, upgrades]
@@ -49,10 +57,13 @@
     - role: fail2ban
       tags: [fail2ban]
     - role: module_blacklist
+      when: module_blacklist_manage | default(true)
       tags: [module_blacklist, modules]
     - role: disable_mdns
+      when: disable_mdns_manage | default(true)
       tags: [disable_mdns, mdns]
     - role: disable_cups
+      when: disable_cups_manage | default(true)
       tags: [disable_cups, cups]
     - role: motd
       tags: [motd]
@@ -62,6 +73,7 @@
       tags: [cloud_init, image]
     # Cloud-image cleanup: removes cloud-init's sshd drop-in, strips stale ipv6.
     - role: cloudinit_cleanup
+      when: cloudinit_cleanup_manage | default(true)
       tags: [cloudinit_cleanup, cloudinit]
     # image_generalize MUST stay last — it wipes host keys / machine-id /
     # cloud-init state, leaving the box ready to snapshot.
