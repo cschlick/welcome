@@ -15,17 +15,17 @@ ssh_authorized_keys: {}
 ssh_allow_users: ["user"]   # only this user may log in over SSH (AllowUsers)
 
 # --- accounts role ---
-# Empty: user has no password and receives NOPASSWD: ALL.
+# Empty: any existing bootstrap password is discarded and locked; user receives
+# NOPASSWD: ALL after its configured SSH keys are installed.
 # Set a sha512crypt hash in ansible/local.yml: user then requires its password
 # for sudo by default. Override user_nopasswd_sudo_commands with an explicit
 # command list if selected automation should remain passwordless.
 user_password_hash: ""
 
 # --- group_prune role ---
-# Strip a user from peripheral/desktop groups it doesn't need on a headless box
-# (never touches sudo or the user's primary group). Drop `netdev` only if the
-# user need not manage networking — systemd-networkd runs as root here, so user
-# doesn't.
+# Strip the managed account from peripheral/desktop groups it does not need on
+# a headless box (never touches sudo or its primary group). systemd-networkd
+# runs as root, so the account does not need netdev.
 group_prune:
   - user: user
     groups: [cdrom, floppy, audio, dip, video, plugdev, users, netdev]

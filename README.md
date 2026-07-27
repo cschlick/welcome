@@ -38,9 +38,11 @@ security_report.sh         # read-only attack-surface report (see below)
 >   user: "ssh-ed25519 AAAA...your-key... you@laptop"
 > ```
 >
-> Re-run `bash apply.sh` and the `ssh` role installs the key **and** switches
-> password auth off automatically. Public keys only (never a private key); the
-> user must already exist. More detail in [SSH password auth → key-only](#ssh-password-auth--key-only-automatic).
+> Re-run `bash apply.sh`: the accounts role creates or hardens `user`, installs
+> the key, and discards its insecure bootstrap password. The SSH role then
+> switches network login to key-only authentication. Public keys only—never a
+> private key. More detail in
+> [SSH password auth → key-only](#ssh-password-auth--key-only-automatic).
 
 ### 1. Install Ansible + collections
 
@@ -61,9 +63,11 @@ script as root:
 sudo bash apply.sh
 ```
 
-The playbook creates a dedicated `user` administrator and never deletes
-pre-existing users. With no configured password, `user` receives
-`NOPASSWD: ALL`, making it usable for automation without storing a credential.
+The playbook creates `user` when absent or hardens the provider-created account
+when it already exists. It installs the configured SSH keys before replacing
+the insecure bootstrap password with a locked value. Existing home-directory
+data is preserved, and no other users are deleted. The resulting key-only
+account receives `NOPASSWD: ALL`.
 
 An optional password hash can be supplied manually through gitignored
 `ansible/local.yml`. Once configured, sudo requires that password by default
@@ -181,7 +185,7 @@ Applied in this order (see `site.yml`). Tag = role name unless noted.
 | Role | What it does |
 | --- | --- |
 | **hostname** | Sets the hostname via `hostnamectl` (no-op unless `system_hostname` is set). |
-| **accounts** | Creates `user` as the managed administrator without deleting existing users. Its sudo policy adapts to whether a local password hash is supplied. |
+| **accounts** | Creates or hardens `user`: preserves its home, installs SSH keys before discarding the bootstrap password, grants sudo, and never deletes other users. |
 | **system_upgrade** | `apt update` + `apt upgrade --with-new-pkgs` (one-off catch-up patch). Skip with `--skip-tags system_upgrade`. |
 | **ssh** | Hardened `sshd_config`: no root login, strong KEX/ciphers/MACs, no NIST ECDSA host key, `MaxAuthTries`/grace limits, forwarding/X11 off. Auth-critical settings also written to `sshd_config.d/00-hardening.conf` (sorts before cloud-init's drop-in). Password auth turns off automatically once `ssh_authorized_keys` has a key. |
 | **sysctl** | Network + kernel hardening drop-in (rp_filter, SYN cookies, no source routing/redirects, `kptr_restrict`, ptrace scope, unprivileged-eBPF/userns off, kexec disabled, RFC 1337, per-interface `accept_redirects=0`, …). |
@@ -207,9 +211,9 @@ Applied in this order (see `site.yml`). Tag = role name unless noted.
 
 ### Not included (by design)
 
-Removal of existing user accounts, dotfiles, WireGuard, and NFS mounts are
-intentionally **not** included. The playbook creates and manages only `user`;
-it never guesses which pre-existing accounts are safe to delete.
+Removal of user accounts, dotfiles, WireGuard, and NFS mounts are intentionally
+**not** included. The playbook creates or hardens only `user`; it never guesses
+which other accounts are safe to delete.
 
 ## Key variables
 

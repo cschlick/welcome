@@ -6,7 +6,7 @@
     - name: Read the passwd and group databases
       ansible.builtin.getent:
         database: "{{ item }}"
-      loop: [passwd, group]
+      loop: [passwd, group, shadow]
 
     - name: Assert user was created and is in the sudo group
       ansible.builtin.assert:
@@ -19,18 +19,45 @@
       ansible.builtin.assert:
         quiet: true
         that:
-          - "'linuxuser' in ansible_facts.getent_passwd"
-          - "'linuxuser' in ansible_facts.getent_group"
+          - "'otheruser' in ansible_facts.getent_passwd"
+          - "'otheruser' in ansible_facts.getent_group"
 
     - name: Stat the unrelated account's home directory
       ansible.builtin.stat:
-        path: /home/linuxuser
-      register: verify_linuxuser_home
+        path: /home/otheruser
+      register: verify_otheruser_home
 
     - name: Assert the unrelated account's home directory remains
       ansible.builtin.assert:
         quiet: true
-        that: verify_linuxuser_home.stat.isdir
+        that: verify_otheruser_home.stat.isdir
+
+    - name: Assert the insecure bootstrap password was discarded and locked
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - "ansible_facts.getent_shadow['user'][0] == '!'"
+
+    - name: Check the bootstrap user's existing home data
+      ansible.builtin.stat:
+        path: /home/user/existing-file
+      register: verify_existing_file
+
+    - name: Assert existing home data was preserved
+      ansible.builtin.assert:
+        quiet: true
+        that: verify_existing_file.stat.exists
+
+    - name: Check the installed administrative key
+      ansible.builtin.slurp:
+        path: /home/user/.ssh/authorized_keys
+      register: verify_authorized_keys
+
+    - name: Assert the key was installed before password hardening
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - "'test-key' in (verify_authorized_keys.content | b64decode)"
 
     - name: Read user's sudoers grant
       ansible.builtin.slurp:

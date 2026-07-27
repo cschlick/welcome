@@ -5,8 +5,8 @@
   roles:
     - role: hostname
       tags: [hostname]
-    # Must precede ssh (installs user's authorized_keys) and group_prune
-    # (prunes user's groups): ensures user exists without deleting users.
+    # Must precede ssh and group_prune: ensures user exists, installs its key,
+    # and replaces an insecure bootstrap password without deleting users.
     - role: accounts
       tags: [accounts, users]
     - role: system_upgrade
@@ -67,8 +67,8 @@
       tags: [image_generalize, image]
     # The accounts role (above) ensures user exists; the
     # root_password role (after pam) empties root's shadow password field.
-    # Still intentionally NOT ported (interactive / per-host provisioning, not
-    # headless hardening): user passwords, dotfiles, WireGuard, NFS mounts.
+    # Still intentionally NOT ported: deleting users, dotfiles, WireGuard, and
+    # NFS mounts.
     #
     # Run a subset with:  ansible-playbook site.yml --tags ssh,sysctl
     # Skip the heavy one-off upgrade with:  ... --skip-tags system_upgrade

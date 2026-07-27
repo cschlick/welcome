@@ -3,16 +3,26 @@
   hosts: all
   become: true
   tasks:
-    # Seed an unrelated account so the test proves hardening preserves it.
-    - name: Create an unrelated existing account
+    # Seed the provider-style bootstrap account with an insecure password.
+    - name: Create the existing bootstrap user
       ansible.builtin.user:
-        name: linuxuser
+        name: user
+        password: "$6$insecure$placeholder"
+        groups: [sudo]
         create_home: true
         shell: /bin/bash
 
-    - name: Ensure user does not exist yet
+    - name: Leave existing data in the bootstrap user's home
+      ansible.builtin.copy:
+        content: "preserve me\n"
+        dest: /home/user/existing-file
+        owner: user
+        group: user
+        mode: "0600"
+
+    # Seed an unrelated account so the test also proves no users are deleted.
+    - name: Create an unrelated existing account
       ansible.builtin.user:
-        name: user
-        state: absent
-        remove: true
-        force: true
+        name: otheruser
+        create_home: true
+        shell: /bin/bash
