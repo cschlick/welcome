@@ -9,6 +9,8 @@ packages_install:
   - dnsutils
   - tcpdump
   - cracklib-runtime
+  - pipx
+  - wireguard-tools
 
 # Packages to purge: ufw (replaced by nftables) plus the build toolchain, GPU/X
 # graphics stack, audio, docs, recon tooling and desktop/locale cruft that ships

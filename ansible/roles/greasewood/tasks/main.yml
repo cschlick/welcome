@@ -1,10 +1,4 @@
 ---
-- name: Install pipx
-  ansible.builtin.apt:
-    name: pipx
-    state: present
-    update_cache: true
-
 - name: Install Greasewood globally
   ansible.builtin.command:
     cmd: pipx install --global greasewood
