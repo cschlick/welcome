@@ -17,8 +17,9 @@
           - "'x11forwarding no' in ssh_sshd_t.stdout_lines"
           - "'requiredrsasize 3072' in ssh_sshd_t.stdout_lines"
           - "'allowusers deploy' in ssh_sshd_t.stdout_lines"
-          # IPv6-only listener (IPv4 blocked at the firewall)
-          - "'addressfamily inet6' in ssh_sshd_t.stdout_lines"
+          # Dual-stack listeners
+          - "'addressfamily any' in ssh_sshd_t.stdout_lines"
+          - "'listenaddress 0.0.0.0:22' in ssh_sshd_t.stdout_lines"
           - "'listenaddress [::]:22' in ssh_sshd_t.stdout_lines"
           # session hardening
           - "'maxsessions 2' in ssh_sshd_t.stdout_lines"

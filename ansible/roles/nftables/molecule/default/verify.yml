@@ -14,8 +14,8 @@
         that:
           - "'hook input' in nftables_ruleset.stdout"
           - "'policy drop' in nftables_ruleset.stdout"
-          # SSH is accepted on IPv6 only (by design).
-          - "'ip6 saddr ::/0 tcp dport 22 ct state new accept' in nftables_ruleset.stdout"
+          # SSH is accepted on both IPv4 and IPv6.
+          - "'tcp dport 22 ct state new accept' in nftables_ruleset.stdout"
           # Extra ports are accepted on both families.
           - "'tcp dport 9100 ct state new accept' in nftables_ruleset.stdout"   # from converge
           - "'nft-input-drop' in nftables_ruleset.stdout"

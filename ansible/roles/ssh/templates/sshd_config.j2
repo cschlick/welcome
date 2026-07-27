@@ -4,8 +4,9 @@
 Include /etc/ssh/sshd_config.d/*.conf
 
 Port {{ ssh_port }}
-# IPv6-only; IPv4 is blocked at the firewall (no 0.0.0.0:22 listener).
-AddressFamily inet6
+# Listen on both IPv4 and IPv6.
+AddressFamily any
+ListenAddress 0.0.0.0
 ListenAddress ::
 
 # Offer only Ed25519 and RSA host keys (no NIST ECDSA; see algorithms below).
