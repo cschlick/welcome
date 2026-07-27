@@ -25,7 +25,13 @@ for command_name in ansible-vault ssh tar; do
 done
 
 TEMP_DIR="$(mktemp -d /tmp/welcome-bootstrap.XXXXXX)"
+SSH_OPTIONS=(
+  -o ControlMaster=auto
+  -o ControlPersist=60
+  -o "ControlPath=$TEMP_DIR/ssh-control"
+)
 cleanup() {
+  ssh "${SSH_OPTIONS[@]}" -O exit "$TARGET" >/dev/null 2>&1 || true
   rm -rf -- "$TEMP_DIR"
 }
 trap cleanup EXIT HUP INT TERM
@@ -49,13 +55,14 @@ RELEASE_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 REMOTE_STAGE="/tmp/welcome-stage-$RELEASE_ID"
 REMOTE_VARS="/tmp/welcome-vars-$RELEASE_ID.yml"
 
-ssh "$TARGET" "umask 077 && mkdir '$REMOTE_STAGE'"
+ssh "${SSH_OPTIONS[@]}" "$TARGET" "umask 077 && mkdir '$REMOTE_STAGE'"
 tar \
   --exclude=.git \
   --exclude=logs \
   -C "$ROOT" -czf - . |
-  ssh "$TARGET" "tar -xzf - -C '$REMOTE_STAGE'"
-ssh "$TARGET" "umask 077 && cat > '$REMOTE_VARS'" < "$DECRYPTED_VARS"
+  ssh "${SSH_OPTIONS[@]}" "$TARGET" "tar -xzf - -C '$REMOTE_STAGE'"
+ssh "${SSH_OPTIONS[@]}" "$TARGET" \
+  "umask 077 && cat > '$REMOTE_VARS'" < "$DECRYPTED_VARS"
 
 REMOTE_ARGS=()
 for arg in "$@"; do
@@ -63,7 +70,7 @@ for arg in "$@"; do
   REMOTE_ARGS+=("$quoted_arg")
 done
 
-ssh -tt "$TARGET" \
+ssh "${SSH_OPTIONS[@]}" -tt "$TARGET" \
   "bash '$REMOTE_STAGE/launch-detached.sh' '$REMOTE_STAGE' '$REMOTE_VARS' '$RELEASE_ID' ${REMOTE_ARGS[*]:-}"
 
 echo
