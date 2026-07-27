@@ -3,3 +3,7 @@ logs/
 
 # Optional machine-local Ansible settings.
 ansible/local.yml
+
+# Vault passwords decrypt committed vaults and must never enter Git.
+.vault_pass
+vault-password

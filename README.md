@@ -17,8 +17,9 @@ ansible/
   site.yml                 # the playbook — all roles, each tagged
   ansible.cfg              # inventory path, roles path, yaml stdout
   requirements.yml         # Galaxy collections (ansible.posix, community.general)
+  vault.yml                # encrypted deployment variables (keys, future secrets)
   inventory/hosts.yml      # targets (empty by default — uses localhost)
-  group_vars/all.yml       # tunables (ssh authorized_keys, AllowUsers, fail2ban_ignoreip, …)
+  group_vars/all.yml       # non-secret tunables (AllowUsers, fail2ban_ignoreip, …)
   roles/<role>/            # one role per hardening concern
     defaults/ meta/ tasks/ handlers/ templates/
     molecule/default/      # per-role Molecule test scenario
@@ -29,9 +30,29 @@ security_report.sh         # read-only attack-surface report (see below)
 
 ## Quick start
 
+The committed vault is decrypted with a password stored outside Git at
+`~/.config/welcome/vault-password`. On a new control machine, restore that
+password from your password manager:
+
+```bash
+install -d -m 700 "$HOME/.config/welcome"
+install -m 600 /dev/null "$HOME/.config/welcome/vault-password"
+# Open the file in your editor and enter the vault password.
+```
+
+`apply.sh` and `fleet.sh` use this location automatically. If it is absent,
+they prompt interactively. The password file must never be committed.
+
 > ### 🔑 Where do my SSH keys go?
-> Put your **public** key in **`ansible/group_vars/all.yml`**, under
-> `ssh_authorized_keys` (a map of *unix-user → public key*):
+> Public keys are stored in encrypted **`ansible/vault.yml`** under
+> `ssh_authorized_keys` (a map of *unix-user → public key*). Edit it with:
+>
+> ```bash
+> ANSIBLE_VAULT_PASSWORD_FILE="$HOME/.config/welcome/vault-password" \
+>   ansible-vault edit ansible/vault.yml
+> ```
+>
+> Its decrypted YAML has this shape:
 >
 > ```yaml
 > ssh_authorized_keys:
@@ -84,7 +105,8 @@ connection. `-K` prompts for the sudo (become) password:
 
 ```bash
 cd ansible
-ansible-playbook -i 'localhost,' -c local site.yml -K
+ansible-playbook -i 'localhost,' -c local site.yml -K \
+  -e @vault.yml --ask-vault-pass
 ```
 
 To manage **remote** hosts instead, add them under `all:` in
@@ -99,13 +121,14 @@ all:
 ```
 
 ```bash
-ansible-playbook site.yml -K          # or rely on SSH keys / become config
+ansible-playbook site.yml -K -e @vault.yml --ask-vault-pass
 ```
 
 ### Dry run first
 
 ```bash
-ansible-playbook -i 'localhost,' -c local site.yml -K --check --diff
+ansible-playbook -i 'localhost,' -c local site.yml -K --check --diff \
+  -e @vault.yml --ask-vault-pass
 ```
 
 (`--check` may report errors on tasks that depend on an earlier task having
@@ -113,7 +136,7 @@ actually run — normal for a no-op dry run.)
 
 ## SSH password auth → key-only (automatic)
 
-> **🔑 Your public key goes in `ansible/group_vars/all.yml`**, under
+> **🔑 Your public key goes in encrypted `ansible/vault.yml`**, under
 > `ssh_authorized_keys`:
 > ```yaml
 > ssh_authorized_keys:
@@ -128,7 +151,7 @@ on until then — so the same command does the right thing on every run:
 # First run — no key yet -> password auth stays ON
 bash apply.sh
 
-# Add your key to ansible/group_vars/all.yml, e.g.:
+# Edit ansible/vault.yml and add your key, e.g.:
 #   ssh_authorized_keys:
 #     user: "ssh-ed25519 AAAA... you@laptop"
 
@@ -213,11 +236,13 @@ which other accounts are safe to delete.
 
 ## Key variables
 
-Set in `group_vars/all.yml`, `host_vars/<name>.yml`, or `-e`. The most important:
+Non-secret settings live in `group_vars/all.yml`; encrypted deployment values
+live in `vault.yml`. The most important values are:
 
 ```yaml
 # ssh role — add a key and password auth turns off automatically (see above)
-ssh_authorized_keys: {}       # { deploy: "ssh-ed25519 AAAA… user@host" }
+# vault.yml
+ssh_authorized_keys: {}       # { user: "ssh-ed25519 AAAA… user@host" }
 ssh_allow_users: []           # e.g. ["deploy"] => AllowUsers restriction
 # ssh_password_authentication: "no"   # optional explicit override (default: auto)
 
@@ -280,7 +305,7 @@ Do this **once on the machine you'll run the fleet from** (your admin/control bo
 **1. Install Ansible + collections** (incl. the `vultr.cloud` inventory plugin):
 
 ```bash
-git clone https://github.com/cschlick/postinstall && cd postinstall
+git clone https://github.com/cschlick/welcome && cd welcome
 sudo apt-get update && sudo apt-get install -y ansible python3-requests
 ansible-galaxy collection install -r ansible/requirements.yml
 ```
@@ -289,20 +314,16 @@ ansible-galaxy collection install -r ansible/requirements.yml
 
 ```bash
 cd ansible
-# choose a vault passphrase, stash it locally (git-ignored); add the export to
-# your shell profile so it persists
-echo 'your-vault-passphrase' > ../.vault_pass && chmod 600 ../.vault_pass
-export ANSIBLE_VAULT_PASSWORD_FILE="$PWD/../.vault_pass"
-
-# encrypt the API key into a vars file (safe to commit — it's encrypted)
-ansible-vault create inventory/vault.yml
+# Use the same machine-local vault password as the generic vault.
+ansible-vault create inventory/vault.yml \
+  --vault-password-file "$HOME/.config/welcome/vault-password"
 #   add one line in the editor that opens:
 #     vultr_api_key: your-real-vultr-api-key
 ```
 
-> `.vault_pass` is git-ignored — **never commit it**. `inventory/vault.yml` is
-> safe to commit (encrypted). No-vault alternative: `export VULTR_API_KEY=…` —
-> the inventory falls back to the env var.
+> The password file stays outside the repository. `inventory/vault.yml` is safe
+> to commit once encrypted. Alternatively, export `VULTR_API_KEY`; the inventory
+> falls back to that environment variable.
 
 **3. SSH access to the fleet.** The hardening is key-only + `AllowUsers user`,
 so the control machine needs:
@@ -317,10 +338,10 @@ Then `./fleet.sh list` should show your instances, and you're ready to go.
 
 ### The `fleet.sh` wrapper
 
-`fleet.sh` bundles the `-i inventory/vultr.yml`, `-e @inventory/vault.yml`, and
-vault-password flags so you don't repeat them. With the vault set up above (or
-`VULTR_API_KEY` exported), it auto-detects auth — `inventory/vault.yml` +
-`.vault_pass` means zero prompts. Run `./fleet.sh help` for the full reference.
+`fleet.sh` loads generic `vault.yml`, the Vultr inventory, and optional
+`inventory/vault.yml` without repeated flags. It uses the machine-local vault
+password automatically; `VULTR_API_KEY` remains the no-vault API alternative.
+Run `./fleet.sh help` for the full reference.
 
 ```bash
 ./fleet.sh list                          # discovered hosts + groups
