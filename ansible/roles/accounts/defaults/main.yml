@@ -1,24 +1,11 @@
 ---
 # The playbook owns one predictable administrative account. It never deletes
-# pre-existing users.
-user_password_hash: ""
-ssh_authorized_keys: {}
+# pre-existing users or changes password state.
+user_nopasswd_sudo_commands: ["ALL"]
 
 accounts_present:
   - name: user
     groups: [sudo]
     shell: /bin/bash
     create_home: true
-    password_hash: "{{ user_password_hash }}"
-    # A locked-password account needs passwordless sudo to be useful. Supplying
-    # a hash switches the default to passworded sudo. An explicit command list
-    # (or ["ALL"]) overrides either behavior.
-    nopasswd_sudo_commands: >-
-      {{
-        user_nopasswd_sudo_commands
-        | default(
-            ['ALL']
-            if (user_password_hash | default('') | length == 0)
-            else []
-          )
-      }}
+    nopasswd_sudo_commands: "{{ user_nopasswd_sudo_commands }}"

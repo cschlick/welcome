@@ -1,5 +1,5 @@
 # Per-run apply logs.
 logs/
 
-# Machine-local settings, including the optional user password hash.
+# Optional machine-local Ansible settings.
 ansible/local.yml

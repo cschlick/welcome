@@ -38,10 +38,10 @@ security_report.sh         # read-only attack-surface report (see below)
 >   user: "ssh-ed25519 AAAA...your-key... you@laptop"
 > ```
 >
-> Re-run `bash apply.sh`: the accounts role creates or hardens `user`, installs
-> the key, and discards its insecure bootstrap password. The SSH role then
-> switches network login to key-only authentication. Public keys only—never a
-> private key. More detail in
+> Re-run `bash apply.sh`: the accounts role creates or configures `user`, and
+> the SSH role installs the key and switches network login to key-only
+> authentication. Passwords are not changed. Public keys only—never a private
+> key. More detail in
 > [SSH password auth → key-only](#ssh-password-auth--key-only-automatic).
 
 ### 1. Install Ansible + collections
@@ -63,16 +63,11 @@ script as root:
 sudo bash apply.sh
 ```
 
-The playbook creates `user` when absent or hardens the provider-created account
-when it already exists. It installs the configured SSH keys before replacing
-the insecure bootstrap password with a locked value. Existing home-directory
-data is preserved, and no other users are deleted. The resulting key-only
-account receives `NOPASSWD: ALL`.
-
-An optional password hash can be supplied manually through gitignored
-`ansible/local.yml`. Once configured, sudo requires that password by default
-and any old passwordless grant is removed. Selected commands can remain
-passwordless by setting `user_nopasswd_sudo_commands` in that local file.
+The playbook creates `user` when absent or configures the provider-created
+account when it already exists. Existing home-directory data and passwords are
+left untouched, and no other users are deleted. The account receives
+`NOPASSWD: ALL` by default. Choosing and setting a secure console password is
+deliberately outside this playbook's scope.
 
 …or do it by hand:
 
@@ -185,7 +180,7 @@ Applied in this order (see `site.yml`). Tag = role name unless noted.
 | Role | What it does |
 | --- | --- |
 | **hostname** | Sets the hostname via `hostnamectl` (no-op unless `system_hostname` is set). |
-| **accounts** | Creates or hardens `user`: preserves its home, installs SSH keys before discarding the bootstrap password, grants sudo, and never deletes other users. |
+| **accounts** | Creates or configures `user`, preserves its password and home, grants sudo, and never deletes other users. |
 | **system_upgrade** | `apt update` + `apt upgrade --with-new-pkgs` (one-off catch-up patch). Skip with `--skip-tags system_upgrade`. |
 | **ssh** | Hardened `sshd_config`: no root login, strong KEX/ciphers/MACs, no NIST ECDSA host key, `MaxAuthTries`/grace limits, forwarding/X11 off. Auth-critical settings also written to `sshd_config.d/00-hardening.conf` (sorts before cloud-init's drop-in). Password auth turns off automatically once `ssh_authorized_keys` has a key. |
 | **sysctl** | Network + kernel hardening drop-in (rp_filter, SYN cookies, no source routing/redirects, `kptr_restrict`, ptrace scope, unprivileged-eBPF/userns off, kexec disabled, RFC 1337, per-interface `accept_redirects=0`, …). |
@@ -226,9 +221,8 @@ ssh_authorized_keys: {}       # { deploy: "ssh-ed25519 AAAA… user@host" }
 ssh_allow_users: []           # e.g. ["deploy"] => AllowUsers restriction
 # ssh_password_authentication: "no"   # optional explicit override (default: auto)
 
-# accounts role — put a real hash only in gitignored ansible/local.yml
-user_password_hash: ""
-# user_nopasswd_sudo_commands: ["/usr/bin/systemctl restart ssh"]
+# accounts role
+user_nopasswd_sudo_commands: ["ALL"]
 
 # fail2ban role — add your admin subnet so a typo can't ban you
 fail2ban_ignoreip: ["127.0.0.1/8", "::1"]

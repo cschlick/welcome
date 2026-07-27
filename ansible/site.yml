@@ -5,8 +5,8 @@
   roles:
     - role: hostname
       tags: [hostname]
-    # Must precede ssh and group_prune: ensures user exists, installs its key,
-    # and replaces an insecure bootstrap password without deleting users.
+    # Must precede ssh and group_prune: ensures user exists without changing
+    # passwords or deleting users.
     - role: accounts
       tags: [accounts, users]
     - role: system_upgrade

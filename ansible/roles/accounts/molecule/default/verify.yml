@@ -32,11 +32,11 @@
         quiet: true
         that: verify_otheruser_home.stat.isdir
 
-    - name: Assert the insecure bootstrap password was discarded and locked
+    - name: Assert the existing password was left untouched
       ansible.builtin.assert:
         quiet: true
         that:
-          - "ansible_facts.getent_shadow['user'][0] == '!'"
+          - "ansible_facts.getent_shadow['user'][0] == '$6$insecure$placeholder'"
 
     - name: Check the bootstrap user's existing home data
       ansible.builtin.stat:
@@ -47,17 +47,6 @@
       ansible.builtin.assert:
         quiet: true
         that: verify_existing_file.stat.exists
-
-    - name: Check the installed administrative key
-      ansible.builtin.slurp:
-        path: /home/user/.ssh/authorized_keys
-      register: verify_authorized_keys
-
-    - name: Assert the key was installed before password hardening
-      ansible.builtin.assert:
-        quiet: true
-        that:
-          - "'test-key' in (verify_authorized_keys.content | b64decode)"
 
     - name: Read user's sudoers grant
       ansible.builtin.slurp:

@@ -2,12 +2,6 @@
 - name: Converge
   hosts: all
   become: true
-  vars:
-    ssh_authorized_keys:
-      user: >-
-        ssh-ed25519
-        AAAAC3NzaC1lZDI1NTE5AAAAIOp+Oi4wpYGbVx0DGp0r1ql14/AiwbXiJ8x27YpqSl7/
-        test-key
-  # Exercise the default hardening path for an existing bootstrap user.
+  # Exercise the default path for an existing bootstrap user.
   roles:
     - role: accounts

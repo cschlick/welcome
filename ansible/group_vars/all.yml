@@ -15,12 +15,9 @@ ssh_authorized_keys: {}
 ssh_allow_users: ["user"]   # only this user may log in over SSH (AllowUsers)
 
 # --- accounts role ---
-# Empty: any existing bootstrap password is discarded and locked; user receives
-# NOPASSWD: ALL after its configured SSH keys are installed.
-# Set a sha512crypt hash in ansible/local.yml: user then requires its password
-# for sudo by default. Override user_nopasswd_sudo_commands with an explicit
-# command list if selected automation should remain passwordless.
-user_password_hash: ""
+# Passwords are deliberately outside scope: the accounts role never reads or
+# changes user's password. Set it securely through the console or `passwd`.
+user_nopasswd_sudo_commands: ["ALL"]
 
 # --- group_prune role ---
 # Strip the managed account from peripheral/desktop groups it does not need on
