@@ -194,6 +194,7 @@ Applied in this order (see `site.yml`). Tag = role name unless noted.
 | **auditd** | `auditd` + a hardened ruleset (time/account/login changes, sudo/su, module loads, mounts, key config files); loginuid locked; bumped log retention. Optional immutable (`-e 2`) via `auditd_immutable`. |
 | **pwquality** | `libpam-pwquality` policy drop-in (`minlen=12`, `minclass=3`, dictionary/sequence checks, `enforce_for_root`). Enforced at password-change time. |
 | **pam** | Strips `nullok` from `pam_unix` (no empty-password auth) and wires `pam_faillock` into `common-auth`/`common-account` — locks an account after repeated failures on the local console/sudo path (`deny=5`, 15-min window/auto-unlock; root excluded). Tunable via `pam_faillock_*`. |
+| **root_password** | Conventionally locks root's shadow password with `!`; SSH separately forbids root login. |
 | **group_prune** | Removes a user from peripheral/desktop supplementary groups it doesn't need on a headless box (cdrom/floppy/audio/dip/video/plugdev/users/netdev). Configured via `group_prune`; never touches `sudo` or the primary group. |
 | **networkd** | Switches networking to systemd-networkd (DHCP on `en*`), neutralises ifupdown. **Disruptive** — see above. |
 | **resolved** | Enables systemd-resolved, applies split-DNS routing domains, disables LLMNR/mDNS, points `/etc/resolv.conf` at the stub. |

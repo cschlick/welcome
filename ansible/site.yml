@@ -25,8 +25,7 @@
       tags: [pwquality]
     - role: pam
       tags: [pam]
-    # Must follow pam: pam strips nullok so an empty root hash can't
-    # authenticate — only then is it safe to empty root's shadow field.
+    # Conventionally lock root's password; SSH also forbids root login.
     - role: root_password
       tags: [root_password, accounts]
     - role: group_prune
@@ -66,7 +65,7 @@
       when: image_build | default(false)
       tags: [image_generalize, image]
     # The accounts role (above) ensures user exists; the
-    # root_password role (after pam) empties root's shadow password field.
+    # root_password role locks root's shadow password field.
     # Still intentionally NOT ported: deleting users, dotfiles, WireGuard, and
     # NFS mounts.
     #
