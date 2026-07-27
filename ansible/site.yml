@@ -23,6 +23,8 @@
       tags: [greasewood, vpn]
     - role: auditd
       tags: [auditd]
+    - role: journald
+      tags: [journald, logging]
     - role: pwquality
       tags: [pwquality]
     - role: pam

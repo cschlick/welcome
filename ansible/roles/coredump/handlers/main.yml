@@ -1,5 +1,5 @@
 ---
-- name: Reload sysctl
+- name: Reload coredump sysctl
   ansible.builtin.command: sysctl --system
   changed_when: false
   when: coredump_apply

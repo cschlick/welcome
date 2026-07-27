@@ -43,7 +43,13 @@ table inet filter {
 
         # SSH on both IPv4 and IPv6. No accept-side rate limiter: crossing its
         # threshold would fall through to the drop policy and impede reconnects.
+{% if nftables_ssh_interfaces | length == 0 %}
         tcp dport {{ nftables_ssh_port }} ct state new accept
+{% else %}
+{% for interface in nftables_ssh_interfaces %}
+        iifname "{{ interface }}" tcp dport {{ nftables_ssh_port }} ct state new accept
+{% endfor %}
+{% endif %}
 
 {% for port in nftables_extra_tcp_ports %}
         # Extra allowed inbound TCP (IPv4 and IPv6).

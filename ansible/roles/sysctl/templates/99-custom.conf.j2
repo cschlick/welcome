@@ -115,6 +115,19 @@ kernel.unprivileged_userns_clone = 0
 kernel.io_uring_disabled = 2
 kernel.io_uring_group = -1
 
+# Require applications to explicitly request executable memfd mappings. This
+# blocks a common fileless-execution primitive while preserving legitimate
+# JIT runtimes that use the modern MFD_EXEC flag.
+vm.memfd_noexec = 1
+
+# Prevent unprivileged processes from auto-loading obscure terminal line
+# disciplines, reducing reachable legacy kernel parsing code.
+dev.tty.ldisc_autoload = 0
+
+# Deny unprivileged performance-counter access. Hardware counters can expose
+# cross-process timing and memory-access information.
+kernel.perf_event_paranoid = 4
+
 # ── More network hardening ─────────────────────────────
 
 # Protect against TIME-WAIT assassination (RFC 1337). An attacker can inject

@@ -2,6 +2,11 @@
 # Inbound TCP port for SSH (always accepted, IPv4 and IPv6, new connections).
 nftables_ssh_port: 22
 
+# Interfaces allowed to receive SSH. Empty means all interfaces so a fresh host
+# remains reachable during bootstrap. After Greasewood access is verified, set
+# this to ["gw-home"] in local variables to remove physical-interface SSH.
+nftables_ssh_interfaces: []
+
 # Extra inbound TCP ports to accept (IPv4 and IPv6). Empty on the headless
 # base; the old GUI profile is just: nftables_extra_tcp_ports: [3389]  # RDP
 nftables_extra_tcp_ports: []

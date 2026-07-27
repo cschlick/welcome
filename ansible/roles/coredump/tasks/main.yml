@@ -7,7 +7,7 @@
     owner: root
     group: root
     mode: "0644"
-  notify: Reload sysctl
+  notify: Reload coredump sysctl
 
 # 2. limits: zero the core-dump size for all PAM sessions.
 - name: Zero the core-dump size limit for all PAM sessions
