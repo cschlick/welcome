@@ -65,17 +65,10 @@ The playbook creates a dedicated `user` administrator and never deletes
 pre-existing users. With no configured password, `user` receives
 `NOPASSWD: ALL`, making it usable for automation without storing a credential.
 
-To give `user` a console and sudo password:
-
-```bash
-./set-user-password.sh
-sudo bash apply.sh
-```
-
-The generated hash is stored in gitignored `ansible/local.yml`. Once a password
-is configured, sudo requires it by default and any old passwordless grant is
-removed. Selected commands can remain passwordless by setting
-`user_nopasswd_sudo_commands` in that local file.
+An optional password hash can be supplied manually through gitignored
+`ansible/local.yml`. Once configured, sudo requires that password by default
+and any old passwordless grant is removed. Selected commands can remain
+passwordless by setting `user_nopasswd_sudo_commands` in that local file.
 
 …or do it by hand:
 
