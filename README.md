@@ -24,6 +24,9 @@ ansible/
     defaults/ meta/ tasks/ handlers/ templates/
     molecule/default/      # per-role Molecule test scenario
 apply.sh                   # install Ansible + collections, then apply ansible/site.yml (idempotent)
+bootstrap-remote.sh        # securely launch a detached local apply over SSH
+detached-apply.sh          # transient systemd service worker
+launch-detached.sh         # target-side release installer/launcher
 fleet.sh                   # run the playbook across the Vultr fleet (wraps inventory + vault flags)
 security_report.sh         # read-only attack-surface report (see below)
 ```
@@ -42,6 +45,37 @@ install -m 600 /dev/null "$HOME/.config/welcome/vault-password"
 
 `apply.sh` and `fleet.sh` use this location automatically. If it is absent,
 they prompt interactively. The password file must never be committed.
+
+### Recommended first deployment
+
+Run the first hardening pass from your control machine:
+
+```bash
+./bootstrap-remote.sh user@203.0.113.10
+```
+
+The launcher:
+
+1. Decrypts `ansible/vault.yml` on the control machine.
+2. Transfers a versioned release to `/opt/welcome/releases/`.
+3. Sends decrypted variables through SSH to a mode-`0600` file in `/run`.
+4. Starts `welcome-apply.service` as a detached local systemd job.
+5. Deletes the decrypted file when the job exits, whether it succeeds or fails.
+
+The vault password never goes to the VM. Because Ansible runs locally under
+systemd, the job continues if SSH, nftables, or networkd interrupts the
+connection. After reconnecting:
+
+```bash
+ssh user@203.0.113.10 \
+  'sudo journalctl -u welcome-apply.service --no-pager'
+```
+
+Pass playbook arguments after `--`:
+
+```bash
+./bootstrap-remote.sh user@203.0.113.10 -- --skip-tags networkd
+```
 
 > ### 🔑 Where do my SSH keys go?
 > Public keys are stored in encrypted **`ansible/vault.yml`** under
@@ -65,7 +99,7 @@ they prompt interactively. The password file must never be committed.
 > key. More detail in
 > [SSH password auth → key-only](#ssh-password-auth--key-only-automatic).
 
-### 1. Install Ansible + collections
+### Local/manual deployment
 
 The convenience script apt-installs Ansible, installs the required Galaxy
 collections, and applies the playbook to the local host — i.e. steps 1 and 2 in
@@ -98,7 +132,7 @@ cd ansible
 ansible-galaxy collection install -r requirements.yml
 ```
 
-### 2. Run it
+### Run Ansible manually
 
 The inventory is empty by default, so target the local machine over a local
 connection. `-K` prompts for the sudo (become) password:
@@ -341,7 +375,9 @@ Then `./fleet.sh list` should show your instances, and you're ready to go.
 `fleet.sh` loads generic `vault.yml`, the Vultr inventory, and optional
 `inventory/vault.yml` without repeated flags. It uses the machine-local vault
 password automatically; `VULTR_API_KEY` remains the no-vault API alternative.
-Run `./fleet.sh help` for the full reference.
+Use it for inventory, checks, key rotation, and maintenance after initial
+hardening. Prefer `bootstrap-remote.sh` for the first run or any change that
+could replace active networking. Run `./fleet.sh help` for the full reference.
 
 ```bash
 ./fleet.sh list                          # discovered hosts + groups

@@ -15,7 +15,7 @@
 #   list                 list discovered hosts + groups
 #   ping                 connectivity check (are they reachable as user?)
 #   check                DRY RUN of site.yml (--check --diff) — start here
-#   apply                apply site.yml to the fleet
+#   apply                apply to an already-hardened fleet
 #   rotate-keys          apply only the ssh role (--tags ssh)
 #   help                 this message
 #
@@ -28,8 +28,8 @@
 #   ./fleet.sh rotate-keys --limit tag_canary                         # 1. add new key, test
 #   ./fleet.sh rotate-keys -e ssh_authorized_keys_exclusive=true      # 2. drop the old key
 #
-# Safety: prefer `check` and `--limit` before a fleet-wide `apply`. The disruptive
-# roles (ssh/nftables/networkd) can drop connections; roll out in batches.
+# Safety: use bootstrap-remote.sh for first-run or networking changes. Prefer
+# `check` and `--limit` before applying routine maintenance fleet-wide.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

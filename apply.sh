@@ -1,24 +1,19 @@
 #!/usr/bin/env bash
-# Apply the hardening playbook to THIS host. Idempotent — safe to re-run; each
-# run only changes what's drifted (e.g. add a key to ssh_authorized_keys and
-# re-run to switch SSH to key-only).
-#
-# Fully non-interactive: become runs without a password prompt, so it needs
-# passwordless sudo — or run the whole script as root:  sudo bash apply.sh
-# Operates on the ansible/ dir beside this script (run it from anywhere). Each
-# run writes its own timestamped log to ./logs/apply-<timestamp>.log.
-#
-# SSH password auth switches off automatically once a key is loaded from the
-# encrypted ansible/vault.yml; until then it stays on.
-#
-# IMAGE_BUILD=1 bash apply.sh  -> also runs the cloud_init + image_generalize
-# roles to produce a generalized, cloud-init-ready Vultr image (syspreps the box:
-# clears host keys, machine-id, cloud-init state). Snapshot the box afterward.
+# Apply the checked-out playbook locally. This is the worker used both directly
+# on a host and by the detached systemd deployment path.
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT/ansible"
+
+run_as_root() {
+  if [ "$(id -u)" = 0 ]; then
+    "$@"
+  else
+    sudo "$@"
+  fi
+}
 
 LOG_DIR="$ROOT/logs"
 mkdir -p "$LOG_DIR"
@@ -28,8 +23,16 @@ EXTRA=()
 [ "${IMAGE_BUILD:-0}" = 1 ] && EXTRA+=(-e image_build=true)
 [ -f local.yml ] && EXTRA+=(-e @local.yml)
 
-# Generic encrypted deployment variables (SSH keys today, extensible later).
-if [ -f vault.yml ]; then
+# A detached remote launch passes already-decrypted variables through a
+# short-lived file in /run. In ordinary local use, decrypt the committed vault
+# with a machine-local password file or an interactive prompt.
+if [ -n "${WELCOME_DECRYPTED_VARS_FILE:-}" ]; then
+  [ -r "$WELCOME_DECRYPTED_VARS_FILE" ] || {
+    echo "apply.sh: cannot read WELCOME_DECRYPTED_VARS_FILE" >&2
+    exit 1
+  }
+  EXTRA+=(-e @"$WELCOME_DECRYPTED_VARS_FILE")
+elif [ -f vault.yml ]; then
   EXTRA+=(-e @vault.yml)
   if [ -z "${ANSIBLE_VAULT_PASSWORD_FILE:-}" ]; then
     WELCOME_VAULT_PASSWORD_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/welcome/vault-password"
@@ -41,11 +44,13 @@ if [ -f vault.yml ]; then
   fi
 fi
 
-sudo apt-get update && sudo apt-get install -y ansible
+run_as_root apt-get update
+run_as_root apt-get install -y ansible
 ansible-galaxy collection install -r requirements.yml
-echo "==> logging this run to $LOG${IMAGE_BUILD:+  (IMAGE BUILD)}"
-ANSIBLE_LOG_PATH="$LOG" ansible-playbook -i 'localhost,' -c local site.yml "${EXTRA[@]}"
 
-# Expose the latest log at a fixed path so the dynamic MOTD can find it.
-sudo mkdir -p /var/log/ansible-apply
-sudo ln -sf "$LOG" /var/log/ansible-apply/latest.log
+echo "==> logging this run to $LOG"
+ANSIBLE_LOG_PATH="$LOG" \
+  ansible-playbook -i 'localhost,' -c local site.yml "${EXTRA[@]}" "$@"
+
+run_as_root install -d -m 0755 /var/log/ansible-apply
+run_as_root ln -sfn "$LOG" /var/log/ansible-apply/latest.log
