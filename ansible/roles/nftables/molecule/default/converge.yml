@@ -4,5 +4,9 @@
   become: true
   vars:
     nftables_extra_tcp_ports: [9100]   # prove templating of extra ports
+  pre_tasks:
+    - name: Seed a third-party nftables table
+      ansible.builtin.command: nft add table inet molecule_preserve
+      changed_when: true
   roles:
     - role: nftables

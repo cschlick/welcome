@@ -34,6 +34,7 @@
           # password auth ON (you can't be locked out before you have a key).
           - "'passwordauthentication yes' in ssh_sshd_t.stdout_lines"
           - "'kbdinteractiveauthentication yes' in ssh_sshd_t.stdout_lines"
+          - "ssh_sshd_t.stdout | regex_search('(^|,)ecdsa-sha2-nistp') is none"
 
     - name: Stat the main sshd_config
       ansible.builtin.stat:

@@ -24,6 +24,10 @@ networkd_dhcp_route_metric: 100
 # change what happens on the next boot / cutover.
 networkd_disable_ifupdown: true
 
+# Disable dhcpcd when networkd takes ownership. Running both clients on one
+# interface creates duplicate addresses, leases, and competing default routes.
+networkd_disable_dhcpcd: true
+
 # Also purge ifupdown + isc-dhcp-client once networkd manages the link. Off by
 # default — disabling/masking the service is enough and fully reversible.
 networkd_purge_ifupdown: false

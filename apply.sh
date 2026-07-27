@@ -56,3 +56,10 @@ ANSIBLE_LOG_PATH="$LOG" \
 
 run_as_root install -d -m 0755 /var/log/ansible-apply
 run_as_root ln -sfn "$LOG" /var/log/ansible-apply/latest.log
+
+if [ -e /var/run/reboot-required ]; then
+  echo "==> REBOOT REQUIRED"
+  run_as_root cat /var/run/reboot-required
+  [ ! -r /var/run/reboot-required.pkgs ] ||
+    run_as_root cat /var/run/reboot-required.pkgs
+fi

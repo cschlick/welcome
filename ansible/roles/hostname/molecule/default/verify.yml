@@ -13,3 +13,14 @@
         quiet: true
         that:
           - "(hostname_file.content | b64decode).strip() == 'molecule-hostname-test'"
+
+    - name: Read /etc/hosts
+      ansible.builtin.slurp:
+        src: /etc/hosts
+      register: hosts_file
+
+    - name: Assert local hostname resolution was updated
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - "'127.0.1.1\\tmolecule-hostname-test' in (hosts_file.content | b64decode)"

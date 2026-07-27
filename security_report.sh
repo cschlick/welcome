@@ -80,6 +80,8 @@ run 'uptime'
 run 'cat /proc/cmdline'                    # boot params: mitigations, audit=1, etc.
 run 'cat /sys/kernel/security/lockdown 2>/dev/null'
 run 'grep -r . /sys/devices/system/cpu/vulnerabilities/ 2>/dev/null'
+have mokutil && run 'mokutil --sb-state 2>/dev/null'
+run 'if [ -e /var/run/reboot-required ]; then cat /var/run/reboot-required; cat /var/run/reboot-required.pkgs 2>/dev/null; else echo "No reboot currently required."; fi'
 
 # ============================================================ KERNEL MODS ===
 banner "KERNEL MODULES & BLACKLISTS"
@@ -132,6 +134,7 @@ run 'ip route; echo; ip -6 route'
 run 'ss -tulpnH 2>/dev/null | sort'         # all LISTENING sockets + owning process
 run 'ss -tupnH state established 2>/dev/null'
 run 'cat /etc/hosts'
+run 'printf "Kernel hostname: "; hostname; printf "127.0.1.1 mapping: "; awk '"'"'$1 == "127.0.1.1" { print $2 }'"'"' /etc/hosts'
 run 'tail -v -n +1 /etc/hosts.allow /etc/hosts.deny 2>/dev/null'
 run 'cat /etc/resolv.conf'
 have resolvectl && run 'resolvectl status 2>/dev/null'
@@ -140,6 +143,7 @@ have resolvectl && run 'resolvectl status 2>/dev/null'
 # defined as .netdev/.network units (no wg-quick, no /etc/wireguard/*.conf).
 have networkctl && run 'networkctl list 2>/dev/null'
 have networkctl && run 'networkctl status -a 2>/dev/null'
+run 'systemctl is-active systemd-networkd dhcpcd NetworkManager networking 2>/dev/null; pgrep -a -x "dhcpcd|dhclient|NetworkManager" 2>/dev/null'
 # Both go through redact: the WireGuard PrivateKey lives in the .netdev (and
 # the .network may carry one too), so neither may be dumped unredacted.
 run 'tail -v -n +1 /etc/systemd/network/*.netdev 2>/dev/null | redact'    # incl. wireguard [WireGuard] PrivateKey
@@ -167,6 +171,7 @@ run 'systemctl list-unit-files --state=enabled --no-legend --no-pager'
 run 'systemctl list-unit-files --state=masked --no-legend --no-pager'
 run 'systemctl --failed --no-legend --no-pager'
 run 'systemctl list-sockets --no-legend --no-pager 2>/dev/null'
+have systemd-analyze && run 'systemd-analyze security --no-pager 2>/dev/null'
 
 # ============================================================ SCHEDULED =====
 banner "SCHEDULED TASKS (cron / timers / at)"
@@ -201,12 +206,15 @@ have getcap && run 'echo "File capabilities:"; getcap -r / 2>/dev/null'
 banner "MOUNTS & FSTAB"
 run 'findmnt -A 2>/dev/null || mount'
 run 'cat /etc/fstab'
+run 'swapon --show 2>/dev/null'
+run 'lsblk -o NAME,TYPE,FSTYPE,FSVER,MOUNTPOINTS 2>/dev/null'
+have dmsetup && run 'dmsetup ls --tree 2>/dev/null'
 
 # ============================================================ PAM/POLICY ====
 banner "PAM & PASSWORD POLICY"
 run 'tail -v -n +1 /etc/pam.d/common-auth /etc/pam.d/common-password /etc/pam.d/common-account /etc/pam.d/login /etc/pam.d/sshd 2>/dev/null'
 run 'cat /etc/security/faillock.conf 2>/dev/null'
-run 'cat /etc/security/pwquality.conf 2>/dev/null'
+run 'tail -v -n +1 /etc/security/pwquality.conf /etc/security/pwquality.conf.d/*.conf 2>/dev/null'
 run 'tail -v -n +1 /etc/security/limits.conf /etc/security/limits.d/* 2>/dev/null'
 
 # ============================================================ MAC ===========
@@ -223,7 +231,7 @@ run 'tail -v -n +1 /etc/systemd/coredump.conf /etc/systemd/coredump.conf.d/* 2>/
 # ============================================================ MISC ===========
 banner "TIME SYNC, LOGGING, BANNERS, PROCESSES"
 have timedatectl && run 'timedatectl 2>/dev/null'
-run 'tail -v -n +1 /etc/systemd/journald.conf 2>/dev/null'
+run 'tail -v -n +1 /etc/systemd/journald.conf /etc/systemd/journald.conf.d/*.conf 2>/dev/null'
 run 'ls -ld /var/log/journal 2>/dev/null; journalctl --disk-usage 2>/dev/null'
 run 'journalctl --no-pager -n 100 -g "Failed password|Invalid user|authentication failure" 2>/dev/null'
 run 'tail -v -n +1 /etc/issue /etc/issue.net /etc/motd 2>/dev/null'

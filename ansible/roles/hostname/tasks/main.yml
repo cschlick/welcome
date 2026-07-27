@@ -2,6 +2,17 @@
 # `ansible.builtin.hostname` auto-selects the systemd strategy on Debian, i.e.
 # it drives hostnamectl just like lib/hostname.py. Skip entirely when unset so
 # the role never clobbers an existing hostname with an empty string.
+- name: Keep the local hostname resolvable
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1\s+'
+    line: "127.0.1.1\t{{ system_hostname }}"
+    insertafter: '^127\.0\.0\.1\s+'
+    owner: root
+    group: root
+    mode: "0644"
+  when: system_hostname | length > 0
+
 - name: Set the system hostname
   ansible.builtin.hostname:
     name: "{{ system_hostname }}"

@@ -5,3 +5,12 @@
   ansible.builtin.command: update-initramfs -u
   changed_when: true
   when: module_blacklist_apply
+
+- name: Mark reboot required
+  ansible.builtin.copy:
+    content: "System restart required to apply module blacklist changes.\n"
+    dest: /var/run/reboot-required
+    owner: root
+    group: root
+    mode: "0644"
+    force: false

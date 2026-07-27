@@ -67,6 +67,14 @@
     - networkd_disable_ifupdown
     - "'networking.service' in ansible_facts.services"
 
+- name: Disable dhcpcd for future boots
+  ansible.builtin.systemd_service:
+    name: dhcpcd
+    enabled: false
+  when:
+    - networkd_disable_dhcpcd
+    - "'dhcpcd.service' in ansible_facts.services"
+
 # ─────────────────────────── live cutover (gated) ──────────────────────────
 # Start networkd FIRST so it claims the link (same DHCP IP), THEN tear down
 # ifupdown — minimising the window where neither manager holds the interface.
@@ -75,6 +83,25 @@
     name: systemd-networkd
     state: restarted
   when: networkd_apply
+
+- name: Stop dhcpcd after networkd owns the links
+  ansible.builtin.systemd_service:
+    name: dhcpcd
+    state: stopped
+    masked: true
+  when:
+    - networkd_apply
+    - networkd_disable_dhcpcd
+    - "'dhcpcd.service' in ansible_facts.services"
+
+- name: Stop stray dhcpcd processes
+  ansible.builtin.command: pkill -x dhcpcd
+  register: networkd_dhcpcd_pkill
+  changed_when: networkd_dhcpcd_pkill.rc == 0
+  failed_when: networkd_dhcpcd_pkill.rc > 1
+  when:
+    - networkd_apply
+    - networkd_disable_dhcpcd
 
 - name: Stop ifupdown networking.service
   ansible.builtin.systemd_service:

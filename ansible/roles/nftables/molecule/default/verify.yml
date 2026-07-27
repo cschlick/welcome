@@ -19,6 +19,7 @@
           # Extra ports are accepted on both families.
           - "'tcp dport 9100 ct state new accept' in nftables_ruleset.stdout"   # from converge
           - "'nft-input-drop' in nftables_ruleset.stdout"
+          - "'table inet molecule_preserve' in nftables_ruleset.stdout"
 
     # nftables.service is a oneshot (RemainAfterExit=yes): it loads the ruleset
     # and exits, so service_facts reports it "stopped". ActiveState is the right
