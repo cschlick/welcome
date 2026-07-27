@@ -1,23 +1,28 @@
 ---
-# Accounts to ensure exist (idempotent: created if missing, left untouched if
-# already present). user is the admin/automation account this playbook
-# connects as and that the ssh + group_prune roles configure, so it must exist
-# before them — this role runs early in site.yml for that reason.
+# The playbook owns one predictable administrative account. It never deletes
+# pre-existing users.
+user_password_hash: ""
+
+# A password-less account needs passwordless sudo to be useful. When an
+# operator supplies a password hash, sudo requires that password by default.
+# Override explicitly with a command list (or ["ALL"]) if desired.
+user_nopasswd_sudo_commands: >-
+  {{
+    ['ALL']
+    if (user_password_hash | default('') | length == 0)
+    else []
+  }}
+
 accounts_present:
   - name: user
     groups: [sudo]
     shell: /bin/bash
     create_home: true
-    # Emergency CONSOLE password for user (SSH password auth is off, so it's
-    # only usable at the Vultr web console / serial). user_password_hash is a
-    # sha512crypt hash set by set-emergency-password.sh; unset => omit => no
-    # password. 'always' (not on_create) so it applies to the ALREADY-EXISTING
-    # user and is re-asserted idempotently each run.
-    password: "{{ user_password_hash | default(omit) }}"
+    password: >-
+      {{
+        user_password_hash
+        if (user_password_hash | default('') | length > 0)
+        else omit
+      }}
     update_password: always
-
-# Accounts to FULLY purge if present: the user plus its home directory, mail
-# spool and (via userdel) its now-unused primary group. Any processes the user
-# is running are killed first so the removal can't be blocked or leave orphans.
-accounts_purge:
-  - linuxuser
+    nopasswd_sudo_commands: "{{ user_nopasswd_sudo_commands }}"

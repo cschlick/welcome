@@ -1,0 +1,11 @@
+---
+# Copy to local.yml for machine-specific values. local.yml is gitignored and
+# loaded automatically by apply.sh.
+
+# Generate this safely with: ./set-user-password.sh
+# user_password_hash: "$6$..."
+
+# With a password hash present, sudo requires the password by default.
+# Uncomment to keep only selected commands passwordless:
+# user_nopasswd_sudo_commands:
+#   - /usr/bin/systemctl restart ssh

@@ -61,6 +61,22 @@ script as root:
 sudo bash apply.sh
 ```
 
+The playbook creates a dedicated `user` administrator and never deletes
+pre-existing users. With no configured password, `user` receives
+`NOPASSWD: ALL`, making it usable for automation without storing a credential.
+
+To give `user` a console and sudo password:
+
+```bash
+./set-user-password.sh
+sudo bash apply.sh
+```
+
+The generated hash is stored in gitignored `ansible/local.yml`. Once a password
+is configured, sudo requires it by default and any old passwordless grant is
+removed. Selected commands can remain passwordless by setting
+`user_nopasswd_sudo_commands` in that local file.
+
 …or do it by hand:
 
 ```bash
@@ -172,6 +188,7 @@ Applied in this order (see `site.yml`). Tag = role name unless noted.
 | Role | What it does |
 | --- | --- |
 | **hostname** | Sets the hostname via `hostnamectl` (no-op unless `system_hostname` is set). |
+| **accounts** | Creates `user` as the managed administrator without deleting existing users. Its sudo policy adapts to whether a local password hash is supplied. |
 | **system_upgrade** | `apt update` + `apt upgrade --with-new-pkgs` (one-off catch-up patch). Skip with `--skip-tags system_upgrade`. |
 | **ssh** | Hardened `sshd_config`: no root login, strong KEX/ciphers/MACs, no NIST ECDSA host key, `MaxAuthTries`/grace limits, forwarding/X11 off. Auth-critical settings also written to `sshd_config.d/00-hardening.conf` (sorts before cloud-init's drop-in). Password auth turns off automatically once `ssh_authorized_keys` has a key. |
 | **sysctl** | Network + kernel hardening drop-in (rp_filter, SYN cookies, no source routing/redirects, `kptr_restrict`, ptrace scope, unprivileged-eBPF/userns off, kexec disabled, RFC 1337, per-interface `accept_redirects=0`, …). |
@@ -197,9 +214,9 @@ Applied in this order (see `site.yml`). Tag = role name unless noted.
 
 ### Not included (by design)
 
-User account management (create/remove/set-password), dotfiles, WireGuard, NFS
-mounts, and "disable root password" are intentionally **not** ported — they're
-interactive or per-host provisioning concerns rather than headless hardening.
+Removal of existing user accounts, dotfiles, WireGuard, and NFS mounts are
+intentionally **not** included. The playbook creates and manages only `user`;
+it never guesses which pre-existing accounts are safe to delete.
 
 ## Key variables
 
@@ -210,6 +227,10 @@ Set in `group_vars/all.yml`, `host_vars/<name>.yml`, or `-e`. The most important
 ssh_authorized_keys: {}       # { deploy: "ssh-ed25519 AAAA… user@host" }
 ssh_allow_users: []           # e.g. ["deploy"] => AllowUsers restriction
 # ssh_password_authentication: "no"   # optional explicit override (default: auto)
+
+# accounts role — put a real hash only in gitignored ansible/local.yml
+user_password_hash: ""
+# user_nopasswd_sudo_commands: ["/usr/bin/systemctl restart ssh"]
 
 # fail2ban role — add your admin subnet so a typo can't ban you
 fail2ban_ignoreip: ["127.0.0.1/8", "::1"]

@@ -26,6 +26,7 @@ LOG="$LOG_DIR/apply-$(date +%Y%m%d-%H%M%S).log"
 
 EXTRA=()
 [ "${IMAGE_BUILD:-0}" = 1 ] && EXTRA+=(-e image_build=true)
+[ -f local.yml ] && EXTRA+=(-e @local.yml)
 
 sudo apt-get update && sudo apt-get install -y ansible
 ansible-galaxy collection install -r requirements.yml

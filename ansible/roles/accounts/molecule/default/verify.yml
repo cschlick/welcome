@@ -15,19 +15,32 @@
           - "'user' in ansible_facts.getent_passwd"
           - "'user' in (ansible_facts.getent_group['sudo'][2] | default('')).split(',')"
 
-    - name: Assert linuxuser was purged from passwd (and its primary group gone)
+    - name: Assert the unrelated existing account was preserved
       ansible.builtin.assert:
         quiet: true
         that:
-          - "'linuxuser' not in ansible_facts.getent_passwd"
-          - "'linuxuser' not in ansible_facts.getent_group"
+          - "'linuxuser' in ansible_facts.getent_passwd"
+          - "'linuxuser' in ansible_facts.getent_group"
 
-    - name: Stat linuxuser's old home directory
+    - name: Stat the unrelated account's home directory
       ansible.builtin.stat:
         path: /home/linuxuser
       register: verify_linuxuser_home
 
-    - name: Assert linuxuser's home directory was removed
+    - name: Assert the unrelated account's home directory remains
       ansible.builtin.assert:
         quiet: true
-        that: not verify_linuxuser_home.stat.exists
+        that: verify_linuxuser_home.stat.isdir
+
+    - name: Read user's sudoers grant
+      ansible.builtin.slurp:
+        path: /etc/sudoers.d/user-nopasswd
+      register: verify_user_sudoers
+
+    - name: Assert password-less user has full passwordless sudo
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - >-
+            (verify_user_sudoers.content | b64decode | trim)
+            == 'user ALL=(ALL:ALL) NOPASSWD: ALL'

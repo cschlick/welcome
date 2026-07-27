@@ -1,6 +1,6 @@
 ---
-# Defaults for the target(s). Override per-host in host_vars/<name>.yml; keep
-# secrets in ansible-vault.
+# Defaults for the target(s). Machine-local overrides can go in local.yml,
+# which apply.sh loads automatically and Git ignores.
 
 # --- connection (remote fleet) ---
 # The hardening allows only user over SSH, so connect as user. Ignored for
@@ -14,10 +14,11 @@ ansible_user: user
 ssh_authorized_keys: {}
 ssh_allow_users: ["user"]   # only this user may log in over SSH (AllowUsers)
 
-# --- accounts role: emergency console password for user ---
-# sha512crypt hash of user's Vultr-console password. SSH password auth is off,
-# so this is only usable at the Vultr web console / serial — never over the network.
-# The hash is public; rotate by generating a new one: printf 'pw' | openssl passwd -6 -stdin
+# --- accounts role ---
+# Empty: user has no password and receives NOPASSWD: ALL.
+# Set a sha512crypt hash in ansible/local.yml: user then requires its password
+# for sudo by default. Override user_nopasswd_sudo_commands with an explicit
+# command list if selected automation should remain passwordless.
 user_password_hash: ""
 
 # --- group_prune role ---
