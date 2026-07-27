@@ -51,9 +51,13 @@ fi
 ansible-vault decrypt "${VAULT_ARGS[@]}" --output "$DECRYPTED_VARS" "$VAULT"
 chmod 0600 "$DECRYPTED_VARS"
 
+read -r -s -p "Greasewood invite token (press Enter to skip): " GREASEWOOD_TOKEN
+echo
+
 RELEASE_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 REMOTE_STAGE="/tmp/welcome-stage-$RELEASE_ID"
 REMOTE_VARS="/tmp/welcome-vars-$RELEASE_ID.yml"
+REMOTE_GREASEWOOD_TOKEN="/tmp/welcome-greasewood-$RELEASE_ID.token"
 
 ssh "${SSH_OPTIONS[@]}" "$TARGET" "umask 077 && mkdir '$REMOTE_STAGE'"
 tar \
@@ -63,6 +67,10 @@ tar \
   ssh "${SSH_OPTIONS[@]}" "$TARGET" "tar -xzf - -C '$REMOTE_STAGE'"
 ssh "${SSH_OPTIONS[@]}" "$TARGET" \
   "umask 077 && cat > '$REMOTE_VARS'" < "$DECRYPTED_VARS"
+printf '%s' "$GREASEWOOD_TOKEN" |
+  ssh "${SSH_OPTIONS[@]}" "$TARGET" \
+    "umask 077 && cat > '$REMOTE_GREASEWOOD_TOKEN'"
+unset GREASEWOOD_TOKEN
 
 REMOTE_ARGS=()
 for arg in "$@"; do
@@ -71,7 +79,7 @@ for arg in "$@"; do
 done
 
 ssh "${SSH_OPTIONS[@]}" -tt "$TARGET" \
-  "bash '$REMOTE_STAGE/launch-detached.sh' '$REMOTE_STAGE' '$REMOTE_VARS' '$RELEASE_ID' ${REMOTE_ARGS[*]:-}"
+  "bash '$REMOTE_STAGE/launch-detached.sh' '$REMOTE_STAGE' '$REMOTE_VARS' '$REMOTE_GREASEWOOD_TOKEN' '$RELEASE_ID' ${REMOTE_ARGS[*]:-}"
 
 echo
 echo "The SSH session may disconnect while networking changes."

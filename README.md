@@ -4,8 +4,9 @@ Hardening for a fresh Debian 13 server. The remote must initially be reachable
 as `user` over SSH, with sudo access.
 
 ```bash
-# On the controller (Debian/Ubuntu):
-sudo apt install ansible-core openssh-client
+# On the controller:
+brew install ansible                         # macOS
+sudo apt install ansible-core openssh-client # Debian/Ubuntu
 
 # Restore the vault password from your password manager:
 install -d -m 700 ~/.config/welcome
@@ -15,6 +16,9 @@ nano ~/.config/welcome/vault-password
 # Bootstrap the server:
 ./bootstrap-remote.sh user@SERVER_IP
 ```
+
+Enter a Greasewood invite token when prompted to join the mesh, or press Enter
+to install Greasewood without joining.
 
 The playbook continues locally on the server if SSH is interrupted. After
 reconnecting, check its result:

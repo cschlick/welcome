@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  role_name: greasewood
+  author: cschlick
+  description: Install the Greasewood mesh VPN client globally with pipx
+  license: MIT
+  min_ansible_version: "2.14"
+dependencies: []
