@@ -21,6 +21,12 @@ Enter the server hostname when prompted, then optionally enter a Greasewood
 invite token. The hostname is set before the server joins the mesh. Press Enter
 at either prompt to keep the current hostname or skip joining.
 
+After verifying Greasewood access, make SSH mesh-only and persist that setting:
+
+```bash
+./bootstrap-remote.sh user@SERVER_IP --mesh-only-ssh
+```
+
 The playbook continues locally on the server if SSH is interrupted. After
 reconnecting, check its result:
 

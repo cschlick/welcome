@@ -4,14 +4,32 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 <ssh-target> [-- <ansible-playbook args...>]" >&2
-  echo "Example: $0 user@203.0.113.10" >&2
+  echo "Usage: $0 <ssh-target> [--mesh-only-ssh] [-- <ansible-playbook args...>]" >&2
+  echo "Example: $0 user@203.0.113.10 --mesh-only-ssh" >&2
 }
 
 [ "$#" -ge 1 ] || { usage; exit 2; }
 TARGET="$1"
 shift
-if [ "${1:-}" = "--" ]; then shift; fi
+MESH_ONLY_SSH=0
+PLAYBOOK_ARGS=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --mesh-only-ssh)
+      MESH_ONLY_SSH=1
+      shift
+      ;;
+    --)
+      shift
+      PLAYBOOK_ARGS+=("$@")
+      break
+      ;;
+    *)
+      PLAYBOOK_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VAULT="$ROOT/ansible/vault.yml"
@@ -99,15 +117,21 @@ ssh "${SSH_OPTIONS[@]}" "$TARGET" \
 unset GREASEWOOD_TOKEN
 
 REMOTE_ARGS=()
-for arg in "$@"; do
+for arg in "${PLAYBOOK_ARGS[@]}"; do
   printf -v quoted_arg '%q' "$arg"
   REMOTE_ARGS+=("$quoted_arg")
 done
 
 ssh "${SSH_OPTIONS[@]}" -tt "$TARGET" \
-  "bash '$REMOTE_STAGE/launch-detached.sh' '$REMOTE_STAGE' '$REMOTE_VARS' '$REMOTE_HOSTNAME' '$REMOTE_GREASEWOOD_TOKEN' '$RELEASE_ID' ${REMOTE_ARGS[*]:-}"
+  "bash '$REMOTE_STAGE/launch-detached.sh' '$REMOTE_STAGE' '$REMOTE_VARS' '$REMOTE_HOSTNAME' '$REMOTE_GREASEWOOD_TOKEN' '$MESH_ONLY_SSH' '$RELEASE_ID' ${REMOTE_ARGS[*]:-}"
 
 echo
 echo "The SSH session may disconnect while networking changes."
-echo "After reconnecting:"
-echo "  ssh $TARGET 'sudo journalctl -u welcome-apply.service --no-pager'"
+if [ "$MESH_ONLY_SSH" = 1 ]; then
+  echo "On success, physical-interface SSH will be disabled."
+  echo "Reconnect through the host's Greasewood name or address, then run:"
+  echo "  sudo journalctl -u welcome-apply.service --no-pager"
+else
+  echo "After reconnecting:"
+  echo "  ssh $TARGET 'sudo journalctl -u welcome-apply.service --no-pager'"
+fi

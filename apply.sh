@@ -22,6 +22,7 @@ LOG="$LOG_DIR/apply-$(date +%Y%m%d-%H%M%S).log"
 EXTRA=()
 [ "${IMAGE_BUILD:-0}" = 1 ] && EXTRA+=(-e image_build=true)
 [ -f local.yml ] && EXTRA+=(-e @local.yml)
+[ ! -f /etc/welcome/local.yml ] || EXTRA+=(-e @/etc/welcome/local.yml)
 [ -z "${WELCOME_SYSTEM_HOSTNAME:-}" ] ||
   EXTRA+=(-e "system_hostname=$WELCOME_SYSTEM_HOSTNAME")
 
