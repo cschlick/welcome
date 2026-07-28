@@ -11,6 +11,7 @@ ansible_user: user
 # --- ssh role ---
 # Keys and future private deployment values live in encrypted ../vault.yml.
 ssh_allow_users: ["user"]   # only this user may log in over SSH (AllowUsers)
+ssh_authorized_keys_exclusive: true  # remove keys not present in the vault
 
 # --- accounts role ---
 # Passwords are deliberately outside scope: the accounts role never reads or
