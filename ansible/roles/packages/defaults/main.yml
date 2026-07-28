@@ -6,6 +6,7 @@ packages_install:
   - git
   - htop
   - rsync
+  - screen
   - dnsutils
   - tcpdump
   - cracklib-runtime
