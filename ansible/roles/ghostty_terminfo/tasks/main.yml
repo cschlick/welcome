@@ -1,0 +1,35 @@
+---
+- name: Check Debian's packaged Ghostty terminfo
+  ansible.builtin.stat:
+    path: /usr/share/terminfo/g/ghostty
+  register: welcome_ghostty_terminfo
+
+- name: Require Debian's packaged Ghostty terminfo
+  ansible.builtin.assert:
+    that: welcome_ghostty_terminfo.stat.exists
+    fail_msg: ncurses-term did not provide /usr/share/terminfo/g/ghostty.
+
+- name: Create the local terminfo directory
+  ansible.builtin.file:
+    path: /etc/terminfo/x
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the xterm-ghostty terminfo alias
+  ansible.builtin.file:
+    src: /usr/share/terminfo/g/ghostty
+    dest: /etc/terminfo/x/xterm-ghostty
+    state: link
+    owner: root
+    group: root
+    force: true
+
+- name: Verify xterm-ghostty is recognized
+  ansible.builtin.command:
+    argv:
+      - infocmp
+      - -x
+      - xterm-ghostty
+  changed_when: false

@@ -46,4 +46,6 @@ ssh user@SERVER_IP 'sudo journalctl -u welcome-apply.service --no-pager'
 ```
 
 The vault password stays on the controller. The server ends with SSH key-only
-access for `user`; its existing password is not changed.
+access for `user`; its existing password is not changed. Debian's packaged
+Ghostty terminfo is also exposed system-wide as `xterm-ghostty`, so Ghostty
+sessions work over SSH without a per-user `tic` command.

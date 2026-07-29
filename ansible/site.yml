@@ -23,6 +23,8 @@
       tags: [nftables]
     - role: packages
       tags: [packages]
+    - role: ghostty_terminfo
+      tags: [ghostty_terminfo, terminfo]
     - role: greasewood
       tags: [greasewood, vpn]
     - role: auditd

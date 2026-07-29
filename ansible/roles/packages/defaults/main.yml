@@ -5,11 +5,13 @@ packages_install:
   - wget
   - git
   - htop
+  - jq
   - rsync
   - screen
   - dnsutils
   - tcpdump
   - cracklib-runtime
+  - ncurses-term
   - pipx
   - wireguard-tools
 
@@ -135,7 +137,6 @@ packages_remove:
   - xdg-user-dirs
   - util-linux-locales
   - libglib2.0-data
-  - ncurses-term
   - libsasl2-modules
   - libldap-common
   - publicsuffix

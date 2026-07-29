@@ -12,8 +12,10 @@
         that:
           # installed from packages_install
           - "'curl' in ansible_facts.packages"
+          - "'jq' in ansible_facts.packages"
           - "'screen' in ansible_facts.packages"
           - "'tcpdump' in ansible_facts.packages"
+          - "'ncurses-term' in ansible_facts.packages"
           # purged: wamerican was pre-installed in prepare.yml, ufw never was
           - "'wamerican' not in ansible_facts.packages"
           - "'ufw' not in ansible_facts.packages"
