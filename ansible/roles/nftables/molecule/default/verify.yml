@@ -17,6 +17,10 @@
           # SSH is limited to the configured interfaces.
           - "'iifname \"eth0\" tcp dport 22 ct state new accept' in nftables_ruleset.stdout"
           - "'iifname \"gw-home\" tcp dport 22 ct state new accept' in nftables_ruleset.stdout"
+          # Greasewood interfaces and transport ports are accepted.
+          - "'iifname \"gw-*\" accept' in nftables_ruleset.stdout"
+          - "'51900' in nftables_ruleset.stdout"
+          - "'51901' in nftables_ruleset.stdout"
           # Extra ports are accepted on both families.
           - "'tcp dport 9100 ct state new accept' in nftables_ruleset.stdout"   # from converge
           - "'nft-input-drop' in nftables_ruleset.stdout"

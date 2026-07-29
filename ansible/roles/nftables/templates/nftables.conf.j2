@@ -18,6 +18,10 @@ table inet filter {
         # allow established/related
         ct state established,related accept
 
+        # Greasewood mesh traffic and UDP transport.
+        iifname "gw-*" accept
+        udp dport { 51900, 51901 } accept
+
         # ICMPv4
         ip protocol icmp icmp type {
             echo-request,           # ping — allows others to reach this host
