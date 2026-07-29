@@ -1,5 +1,10 @@
 ---
 - name: Install Greasewood globally
   ansible.builtin.command:
-    cmd: pipx install --global greasewood
-    creates: /usr/local/bin/gw
+    argv:
+      - pipx
+      - install
+      - --global
+      - --force
+      - git+https://github.com/cschlick/greasewood.git@main
+  changed_when: true
