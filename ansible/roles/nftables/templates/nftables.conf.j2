@@ -1,7 +1,8 @@
 #!/usr/sbin/nft -f
 # {{ ansible_managed }}
 # nftables ruleset (port of configs/nftables/nftables.conf).
-# Edit the role vars (nftables_ssh_port, nftables_extra_tcp_ports), not this file.
+# Edit the role vars (nftables_ssh_port, nftables_extra_tcp_ports,
+# nftables_extra_udp_ports), not this file.
 
 # Replace only the table owned by this role. A global `flush ruleset` would
 # erase tables managed by Greasewood, container runtimes, or other services.
@@ -58,6 +59,11 @@ table inet filter {
 {% for port in nftables_extra_tcp_ports %}
         # Extra allowed inbound TCP (IPv4 and IPv6).
         tcp dport {{ port }} ct state new accept
+{% endfor %}
+
+{% for port in nftables_extra_udp_ports %}
+        # Extra allowed inbound UDP (IPv4 and IPv6).
+        udp dport {{ port }} accept
 {% endfor %}
 
         # Log anything that reaches the end of the chain before the default

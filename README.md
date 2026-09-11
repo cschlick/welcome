@@ -66,7 +66,7 @@ never the password. Keep the password in your password manager.
 All are environment variables:
 
 ```bash
-WELCOME_PROFILE=router ./apply.sh        # apply a profile from ansible/profiles/
+WELCOME_PROFILE=desktop ./apply.sh       # apply a profile from ansible/profiles/
 WELCOME_SYSTEM_HOSTNAME=vps01 ./apply.sh # set the hostname during the run
 IMAGE_BUILD=1 ./apply.sh                 # build a generalized cloud-init image
 ```
@@ -121,6 +121,33 @@ The vault password stays on the controller. The server ends with SSH key-only
 access for `user`; its existing password is not changed. Debian's packaged
 Ghostty terminfo is also exposed system-wide as `xterm-ghostty`, so Ghostty
 sessions work over SSH without a per-user `tic` command.
+
+## The desktop profile
+
+The default `host` profile assumes a headless server: it purges the graphics,
+audio and peripheral stack, blacklists the matching kernel modules, and strips
+the account out of `audio`, `video`, `plugdev` and `netdev`. Applied to a
+machine running GNOME, that leaves a box with no session, no sound and a user
+locked out of its own hardware.
+
+The `desktop` profile keeps every control that does not assume an empty
+console:
+
+```bash
+WELCOME_PROFILE=desktop ./apply.sh -K            # on the machine itself
+./bootstrap-remote.sh user@HOST --profile desktop # from a controller
+```
+
+It does **not** install GNOME. Install the desktop yourself (`apt install
+gnome-core`, `tasksel`, …); the profile hardens around whatever is there.
+
+Relative to the headless base it purges only `ufw`, the Debian docs and the
+recon tooling, and it turns off the roles that would break a seated user:
+`module_blacklist`, `group_prune`, `networkd` (NetworkManager owns the
+interfaces), `resolved`, `disable_cups`, `disable_mdns` and `mounts` (the
+`noexec` `/tmp`). nftables stays on, with 5353/udp opened so Avahi can discover
+printers and shares. Each decision is commented in
+`ansible/profiles/desktop.yml`.
 
 ## The router profile
 

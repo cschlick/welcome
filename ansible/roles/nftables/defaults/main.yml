@@ -10,3 +10,9 @@ nftables_ssh_interfaces: []
 # Extra inbound TCP ports to accept (IPv4 and IPv6). Empty on the headless
 # base; the old GUI profile is just: nftables_extra_tcp_ports: [3389]  # RDP
 nftables_extra_tcp_ports: []
+
+# Extra inbound UDP ports to accept (IPv4 and IPv6). Empty on the headless base.
+# The desktop profile sets [5353] so Avahi can receive mDNS: multicast replies
+# arrive from an address the host never sent to, so conntrack does not class
+# them as established and the drop policy would otherwise take them.
+nftables_extra_udp_ports: []

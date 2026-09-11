@@ -4,7 +4,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 <ssh-target> [--profile host|router] [--mesh-only-ssh] [-- <ansible-playbook args...>]" >&2
+  echo "Usage: $0 <ssh-target> [--profile host|desktop|router] [--mesh-only-ssh] [-- <ansible-playbook args...>]" >&2
   echo "Example: $0 user@203.0.113.10 --profile router" >&2
 }
 

@@ -1,0 +1,79 @@
+---
+# Desktop profile — for a machine running GNOME (or any desktop environment).
+#
+# The base host profile assumes a headless server and strips the graphics,
+# audio and peripheral stack out of the box. Applying it to a desktop leaves an
+# unbootable-to-session machine: no GL, no Wayland/X libraries, no sound, and a
+# user account with no access to its own video or audio devices.
+#
+# This profile keeps every control that is independent of having a display,
+# and disables only those that assume nobody is sitting at the console.
+#
+# It does NOT install GNOME. Install the desktop yourself (`apt install
+# gnome-core`, `tasksel`, …) and use this profile to harden around it.
+#
+#   ./apply.sh -K                                   # on the machine itself
+#   WELCOME_PROFILE=desktop ./apply.sh -K
+#   ./bootstrap-remote.sh user@HOST --profile desktop
+welcome_profile: desktop
+
+# --- packages -----------------------------------------------------------
+# Purge only what a desktop has no more use for than a server does. Everything
+# the base list strips for being "GUI cruft" is load-bearing here:
+#   * graphics/X/Wayland/GL/Vulkan/Mesa — the session itself
+#   * audio (libasound, libpulse, libsndio) — sound
+#   * shared-mime-info, xdg-user-dirs, libglib2.0-data — file associations,
+#     XDG directories and GLib schemas; GNOME misbehaves badly without them
+#   * dictionaries/spellcheck — used by desktop editors and office suites
+#   * publicsuffix — cookie-domain handling in browsers and GLib
+#   * util-linux-locales — locale data for the session
+#   * apparmor-profiles — confinement for desktop apps; keep the profiles
+#   * the build toolchain — DKMS rebuilds out-of-tree drivers (GPU, VirtualBox)
+#     against each new kernel, and needs gcc, make and the kernel headers
+packages_remove:
+  - ufw              # replaced by nftables
+  - debian-faq       # docs cruft
+  - doc-debian
+  - nmap             # recon tooling
+  - nmap-common
+  - inetutils-telnet
+
+# --- roles that assume a headless box -----------------------------------
+
+# Blacklists the audio, bluetooth, webcam and joystick kernel modules. Every
+# one of those is a device a desktop user expects to work.
+module_blacklist_manage: false
+
+# Strips the account out of cdrom, audio, video, plugdev and netdev — exactly
+# the groups that grant a seated user its sound, camera, removable media and
+# network-management access.
+group_prune_manage: false
+
+# A desktop is managed by NetworkManager. This role migrates the host onto
+# systemd-networkd and masks networking.service, which fights NetworkManager
+# for ownership of the interfaces.
+networkd_manage: false
+
+# The resolved role restarts systemd-networkd and swaps /etc/resolv.conf as
+# part of applying. With NetworkManager owning DNS, leave resolution alone.
+resolved_manage: false
+
+# Printing. A desktop is the one machine that legitimately prints.
+disable_cups_manage: false
+
+# Avahi/mDNS — how GNOME finds network printers, shares and cast targets. The
+# role purges the daemon outright, so it has to stay off here.
+disable_mdns_manage: false
+
+# Mounts /tmp as a 2G noexec tmpfs and binds /var/tmp onto it. noexec on /tmp
+# breaks installers, Flatpak/Steam helpers and anything that stages a script
+# there — and a desktop runs arbitrary user software by definition. Re-enable
+# with mounts_manage=true once you know the machine's software tolerates it.
+mounts_manage: false
+
+# --- firewall -----------------------------------------------------------
+# nftables stays on: the input policy is still drop, SSH is still the only
+# inbound TCP. mDNS needs an explicit hole because multicast replies come from
+# an address the host never sent to, so conntrack never marks them established.
+nftables_extra_udp_ports:
+  - 5353            # mDNS (Avahi) — printer, share and device discovery
