@@ -105,6 +105,28 @@ elif [ -f vault.yml ]; then
   fi
 fi
 
+# Become password, decided the same way as the vault password above: ask only
+# when there is no other way in. The playbook needs root, and whether sudo wants
+# a password depends on whether this account already carries the NOPASSWD grant
+# the accounts role installs — true on every host past its first run.
+#
+# This inspects sudo's POLICY (-l) rather than just trying sudo, because a
+# credential cached for THIS terminal proves nothing: Ansible runs sudo without
+# a controlling tty and so misses the tty-keyed timestamp, which is exactly how
+# a run that follows a successful interactive `sudo apt-get` still fails with
+# "sudo: a password is required". Only a real NOPASSWD grant settles it.
+if [ "$(id -u)" = 0 ]; then
+  : # already root; become needs no password
+elif printf '%s\n' "$@" | grep -qxE '\-K|--ask-become-pass'; then
+  : # the operator asked for the prompt explicitly
+elif sudo -n -l 2>/dev/null | grep -qE 'NOPASSWD:[[:space:]]*ALL'; then
+  : # passwordless sudo is granted
+elif [ -t 0 ]; then
+  EXTRA+=(--ask-become-pass)
+else
+  : # no tty to prompt at; let sudo report the failure itself
+fi
+
 run_as_root apt-get update
 run_as_root apt-get install -y ansible
 ansible-galaxy collection install -r requirements.yml

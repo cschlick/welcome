@@ -12,18 +12,17 @@ fresh Debian box needs nothing beyond Git and sudo access.
 ```bash
 git clone https://github.com/cschlick/welcome
 cd welcome
-./apply.sh -K --check --diff   # dry run: report what would change
-./apply.sh -K                  # apply
+./apply.sh --check --diff   # dry run: report what would change
+./apply.sh                  # apply
 ```
 
-`-K` prompts for your sudo password. It is required on the **first** run: the
-playbook needs root, and the `accounts` role is what grants this account
-passwordless sudo in the first place. Without `-K` the run fails with
-`sudo: a password is required`, because Ansible invokes sudo non-interactively.
-Once a full run has completed, `-K` is no longer needed.
-
-Expect two password prompts on that first run — one from `apt-get` installing
-Ansible, and the `BECOME password:` prompt from the playbook itself.
+You do not need `-K`. The playbook needs root, and `apply.sh` works out for
+itself whether sudo will ask for a password — adding `--ask-become-pass` only
+when this account lacks the passwordless grant that the `accounts` role
+installs. In practice that means the **first** run on a fresh box prompts for
+your password (twice: once for `apt-get` installing Ansible, once as
+`BECOME password:`) and every run after it prompts for neither. Passing `-K`
+yourself still works and is never duplicated.
 
 Anything after `apply.sh` passes straight through to `ansible-playbook`, so
 `--tags ssh`, `--skip-tags`, and friends work as usual. The playbook always
@@ -111,7 +110,7 @@ On the target, at the console:
 
 ```bash
 git pull
-./apply.sh -K                          # prompts for the vault password
+./apply.sh                             # prompts for the vault password
 ```
 
 The `greasewood` role joins the mesh when `greasewood_join_token` is non-empty
@@ -189,7 +188,7 @@ The `desktop` profile keeps every control that does not assume an empty
 console:
 
 ```bash
-WELCOME_PROFILE=desktop ./apply.sh -K            # on the machine itself
+WELCOME_PROFILE=desktop ./apply.sh               # on the machine itself
 ./bootstrap-remote.sh user@HOST --profile desktop # from a controller
 ```
 
