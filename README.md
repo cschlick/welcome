@@ -71,6 +71,13 @@ WELCOME_SYSTEM_HOSTNAME=vps01 ./apply.sh # set the hostname during the run
 IMAGE_BUILD=1 ./apply.sh                 # build a generalized cloud-init image
 ```
 
+Run interactively without `WELCOME_PROFILE` and `apply.sh` asks which profile
+applies, listing whatever is in `ansible/profiles/`. There is no default on
+Enter — applying the headless profile to a desktop strips its session, so the
+choice is made deliberately every time. Setting `WELCOME_PROFILE` skips the
+prompt, and a run with no terminal (systemd, CI, a pipe) still defaults to
+`host`, which is what the detached remote path relies on.
+
 For machine-local overrides, `apply.sh` automatically loads `ansible/local.yml`
 (Git-ignored) and `/etc/welcome/local.yml` when either exists. Write them
 against the variables documented in `ansible/group_vars/all.yml`.

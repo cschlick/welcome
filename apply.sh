@@ -21,7 +21,53 @@ LOG="$LOG_DIR/apply-$(date +%Y%m%d-%H%M%S).log"
 
 EXTRA=()
 [ "${IMAGE_BUILD:-0}" = 1 ] && EXTRA+=(-e image_build=true)
-PROFILE="${WELCOME_PROFILE:-host}"
+# Profile selection. An explicit WELCOME_PROFILE always wins and never prompts —
+# the detached path depends on that (launch-detached.sh passes it to systemd as
+# an environment variable). Otherwise ask, as long as there is a terminal to ask
+# at: applying the headless profile to a desktop strips its session, and a
+# prompt you cannot skip beats a flag you have to remember. With no TTY —
+# systemd, CI, a piped run — fall back silently to host, as before.
+PROFILE="${WELCOME_PROFILE:-}"
+if [ -z "$PROFILE" ]; then
+  if [ -t 0 ]; then
+    PROFILE_NAMES=(host)
+    PROFILE_DESCS=("headless server - the default hardening")
+    for profile_file in profiles/*.yml; do
+      [ -e "$profile_file" ] || continue
+      PROFILE_NAMES+=("$(basename "$profile_file" .yml)")
+      # First comment line of the profile, trimmed to keep the menu tidy. These
+      # comments wrap, so mark the cut rather than ending mid-sentence.
+      profile_desc="$(sed -n '2{s/^#[[:space:]]*//;p;q;}' "$profile_file")"
+      [ "${#profile_desc}" -le 58 ] || profile_desc="${profile_desc:0:57}…"
+      PROFILE_DESCS+=("${profile_desc:-(no description)}")
+    done
+    echo "Which profile applies to THIS machine?" >&2
+    for profile_index in "${!PROFILE_NAMES[@]}"; do
+      printf '  %d) %-9s %s\n' \
+        "$((profile_index + 1))" \
+        "${PROFILE_NAMES[$profile_index]}" \
+        "${PROFILE_DESCS[$profile_index]}" >&2
+    done
+    # No default on Enter: the point is that the choice is deliberate.
+    while :; do
+      if ! read -r -p "Profile [1-${#PROFILE_NAMES[@]}]: " profile_reply; then
+        echo >&2
+        echo "apply.sh: no profile chosen" >&2
+        exit 2
+      fi
+      if [[ "$profile_reply" =~ ^[0-9]+$ ]] &&
+        [ "$profile_reply" -ge 1 ] &&
+        [ "$profile_reply" -le "${#PROFILE_NAMES[@]}" ]; then
+        PROFILE="${PROFILE_NAMES[$((profile_reply - 1))]}"
+        break
+      fi
+      echo "Enter a number between 1 and ${#PROFILE_NAMES[@]}." >&2
+    done
+    echo "==> profile: $PROFILE" >&2
+  else
+    PROFILE=host
+  fi
+fi
 [[ "$PROFILE" =~ ^[a-z0-9_-]+$ ]] || {
   echo "apply.sh: invalid WELCOME_PROFILE" >&2
   exit 2
