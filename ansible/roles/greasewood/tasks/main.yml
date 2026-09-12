@@ -8,3 +8,24 @@
       - --force
       - git+https://github.com/cschlick/greasewood.git@main
   changed_when: true
+
+# Skipped when the host already has a gw-* link, so a re-run never re-joins a
+# mesh this machine is on. To move a host to a different mesh, leave first.
+- name: Check whether the host is already on a mesh
+  ansible.builtin.set_fact:
+    greasewood_joined: >-
+      {{ ansible_facts.interfaces | default([]) | select('match', 'gw-')
+         | list | length > 0 }}
+
+- name: Join the Greasewood mesh
+  ansible.builtin.command:
+    argv:
+      - gw
+      - join
+      - "{{ greasewood_join_token }}"
+  # Without this the token is written verbatim into logs/apply-*.log.
+  no_log: true
+  changed_when: true
+  when:
+    - greasewood_join_token | length > 0
+    - not greasewood_joined

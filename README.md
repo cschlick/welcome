@@ -82,6 +82,46 @@ symlinked at `/var/log/ansible-apply/latest.log`. If the run leaves the system
 needing a restart, it prints `REBOOT REQUIRED` along with the responsible
 packages.
 
+## Joining the mesh from the console
+
+`bootstrap-remote.sh` prompts for an invite token, which works when you are
+driving the machine over SSH from a controller. It does not help on a box you
+can only reach through VNC or a physical console, where an invite token is too
+long to retype and the clipboard usually does not survive the trip.
+
+For those, put the token in the vault and let `git pull` carry it. The token
+travels as ciphertext inside the repository; the only secret that has to reach
+the machine by hand is the vault password, which is short enough to type.
+
+On the controller:
+
+```bash
+ansible-vault edit ansible/vault.yml   # add: greasewood_join_token: "<token>"
+git commit -am "Stage a mesh invite token" && git push
+```
+
+On the target, at the console:
+
+```bash
+git pull
+./apply.sh -K                          # prompts for the vault password
+```
+
+The `greasewood` role joins the mesh when `greasewood_join_token` is non-empty
+and the host has no `gw-*` interface yet, so re-runs never re-join. The join
+task is `no_log: true`, keeping the token out of `logs/apply-*.log`.
+
+> **This repository is public.** A committed vault is readable by anyone, and
+> its history cannot be unpublished — the vault password becomes the only thing
+> standing between a stranger and your mesh. Use a high-entropy vault password,
+> prefer a single-use or expiring invite over a standing one, and once the host
+> has joined, revoke the token and clear it from the vault so the published
+> ciphertext is worthless:
+>
+> ```bash
+> ansible-vault edit ansible/vault.yml   # set greasewood_join_token: ""
+> ```
+
 ## Bootstrapping a remote server
 
 The remote must initially be reachable as `user` over SSH, with sudo access.

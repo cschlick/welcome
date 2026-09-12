@@ -13,6 +13,14 @@ ansible_user: user
 ssh_allow_users: ["user"]   # only this user may log in over SSH (AllowUsers)
 ssh_authorized_keys_exclusive: true  # remove keys not present in the vault
 
+# --- greasewood role ---
+# greasewood_join_token lives in encrypted ../vault.yml. Setting it there makes
+# `git pull` the way an invite token reaches a machine you can only get at over
+# VNC or a console — the token is too long to retype, but the vault password
+# that decrypts it is not. The role skips the join when the host already has a
+# gw-* interface, so re-runs are safe. Empty (the role default) = install the
+# client without joining.
+
 # --- accounts role ---
 # Passwords are deliberately outside scope: the accounts role never reads or
 # changes user's password. Set it securely through the console or `passwd`.

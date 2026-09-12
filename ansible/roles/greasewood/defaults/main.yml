@@ -1,0 +1,18 @@
+---
+# Greasewood invite token used to join the mesh. Empty = install the client but
+# do not join.
+#
+# An invite token is long and random: awkward to type at a physical console and
+# often impossible to paste into a VNC session. Setting it in the ENCRYPTED
+# vault makes `git pull` the delivery mechanism — the token travels with the
+# repository as ciphertext, and the only secret that has to reach the machine
+# by hand is the vault password, which is short enough to type:
+#
+#   ansible-vault edit ansible/vault.yml     # on the controller, then commit
+#   git pull && ./apply.sh -K                # on the target, over VNC
+#
+# The vault password is then the ONLY thing protecting this token, and in a
+# public repository its ciphertext is permanently readable by anyone. Use a
+# high-entropy vault password, and prefer a single-use or expiring invite over
+# a standing one where Greasewood supports it.
+greasewood_join_token: ""
