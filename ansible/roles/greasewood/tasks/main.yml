@@ -17,15 +17,31 @@
       {{ ansible_facts.interfaces | default([]) | select('match', 'gw-')
          | list | length > 0 }}
 
+# no_log keeps the token out of logs/apply-*.log, but it also censors a failure,
+# which leaves a failed join undiagnosable. So this never fails directly: it
+# records the result and the next task reports it with the token redacted.
 - name: Join the Greasewood mesh
   ansible.builtin.command:
     argv:
       - gw
       - join
       - "{{ greasewood_join_token }}"
-  # Without this the token is written verbatim into logs/apply-*.log.
+  register: greasewood_join
   no_log: true
-  changed_when: true
+  changed_when: greasewood_join.rc == 0
+  failed_when: false
   when:
     - greasewood_join_token | length > 0
     - not greasewood_joined
+
+- name: Report a failed mesh join
+  ansible.builtin.fail:
+    msg: |-
+      `gw join` failed with rc={{ greasewood_join.rc }}.
+      stderr: {{ greasewood_join.stderr | default('') | replace(greasewood_join_token, '<redacted>') }}
+      stdout: {{ greasewood_join.stdout | default('') | replace(greasewood_join_token, '<redacted>') }}
+      The token itself is redacted above. Check that it has not already been
+      used or expired, and that this host can reach the mesh coordinator.
+  when:
+    - greasewood_join is not skipped
+    - greasewood_join.rc | default(0) != 0
