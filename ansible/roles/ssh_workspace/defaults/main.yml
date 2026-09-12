@@ -1,0 +1,31 @@
+---
+# ssh-workspace (https://github.com/cschlick/ssh-workspace) SSHes into a host
+# and attaches to a persistent tmux or GNU Screen session, reconnecting by
+# itself when the link drops. The whole tool is one bash script.
+#
+# It is a CLIENT: it is what you run to reach a machine, not something a machine
+# needs to be reachable. A host hardened by this playbook is already a valid
+# TARGET — the packages role installs screen, which is the only remote-side
+# requirement. Installing the client here is for hopping onward from this host,
+# and for desktops, where it is the tool you actually sit in front of.
+#
+# Installed to /usr/local/bin rather than the README's per-user ~/.local/bin:
+# one root-owned copy serves every account, which is what a managed fleet wants.
+# Shell aliases and dotfiles stay out of scope, as elsewhere in this playbook.
+
+# Git ref to install from. "main" tracks upstream; pin to a tag or commit SHA
+# to stop a remote change reaching your fleet on the next run.
+ssh_workspace_ref: main
+
+ssh_workspace_url: >-
+  https://raw.githubusercontent.com/cschlick/ssh-workspace/{{ ssh_workspace_ref }}/ssh-workspace
+ssh_workspace_bin: /usr/local/bin/ssh-workspace
+
+# Install the bash completion. The file only takes effect when the
+# bash-completion package is present — it is not in this playbook's base
+# package set, so on a minimal host the completion lies dormant until you add
+# it. Harmless either way.
+ssh_workspace_completion: true
+ssh_workspace_completion_url: >-
+  https://raw.githubusercontent.com/cschlick/ssh-workspace/{{ ssh_workspace_ref }}/completions/ssh-workspace.bash
+ssh_workspace_completion_path: /usr/share/bash-completion/completions/ssh-workspace

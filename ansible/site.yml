@@ -25,6 +25,9 @@
       tags: [packages]
     - role: ghostty_terminfo
       tags: [ghostty_terminfo, terminfo]
+    - role: ssh_workspace
+      when: ssh_workspace_manage | default(true)
+      tags: [ssh_workspace, workspace]
     - role: greasewood
       tags: [greasewood, vpn]
     - role: auditd

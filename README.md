@@ -162,6 +162,14 @@ access for `user`; its existing password is not changed. Debian's packaged
 Ghostty terminfo is also exposed system-wide as `xterm-ghostty`, so Ghostty
 sessions work over SSH without a per-user `tic` command.
 
+[ssh-workspace](https://github.com/cschlick/ssh-workspace) is installed to
+`/usr/local/bin` as a client, for reaching *other* machines from this one — it
+opens an SSH session attached to a persistent tmux or Screen workspace and
+reconnects itself when the link drops. A host hardened by this playbook is
+already a valid target for it without this, since the `packages` role installs
+`screen`. Pin `ssh_workspace_ref` to a tag or commit to stop tracking upstream
+`main`, or set `ssh_workspace_manage=false` to skip it.
+
 ## The desktop profile
 
 The default `host` profile assumes a headless server: it purges the graphics,

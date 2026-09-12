@@ -1,0 +1,40 @@
+---
+# force: true so a re-run picks up upstream changes. Without it get_url only
+# fetches when the destination is missing, and the script would be frozen at
+# whatever was current the first time the host was built.
+- name: Install ssh-workspace
+  ansible.builtin.get_url:
+    url: "{{ ssh_workspace_url }}"
+    dest: "{{ ssh_workspace_bin }}"
+    owner: root
+    group: root
+    mode: "0755"
+    force: true
+
+- name: Create the bash completion directory
+  ansible.builtin.file:
+    path: "{{ ssh_workspace_completion_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: ssh_workspace_completion
+
+- name: Install the ssh-workspace bash completion
+  ansible.builtin.get_url:
+    url: "{{ ssh_workspace_completion_url }}"
+    dest: "{{ ssh_workspace_completion_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
+  when: ssh_workspace_completion
+
+# -h is the only flag that neither connects anywhere nor self-updates; it
+# prints usage and exits 0. There is no --version.
+- name: Verify ssh-workspace runs
+  ansible.builtin.command:
+    argv:
+      - "{{ ssh_workspace_bin }}"
+      - -h
+  changed_when: false
