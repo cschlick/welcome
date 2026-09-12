@@ -1,13 +1,13 @@
 ---
 # Desktop profile — for a machine running GNOME (or any desktop environment).
 #
-# The base host profile assumes a headless server and strips the graphics,
-# audio and peripheral stack out of the box. Applying it to a desktop leaves an
-# unbootable-to-session machine: no GL, no Wayland/X libraries, no sound, and a
-# user account with no access to its own video or audio devices.
+# The base host profile assumes nobody is sitting at the console: it blacklists
+# the audio, bluetooth and webcam kernel modules, strips the account out of the
+# groups that reach its own video and audio devices, migrates networking off
+# NetworkManager, and disables printing and mDNS discovery.
 #
 # This profile keeps every control that is independent of having a display,
-# and disables only those that assume nobody is sitting at the console.
+# and disables only those that assume an empty console.
 #
 # It does NOT install GNOME. Install the desktop yourself (`apt install
 # gnome-core`, `tasksel`, …) and use this profile to harden around it.
@@ -17,28 +17,10 @@
 #   ./bootstrap-remote.sh user@HOST --profile desktop
 welcome_profile: desktop
 
-# --- packages -----------------------------------------------------------
-# Purge only what a desktop has no more use for than a server does. Everything
-# the base list strips for being "GUI cruft" is load-bearing here:
-#   * graphics/X/Wayland/GL/Vulkan/Mesa — the session itself
-#   * audio (libasound, libpulse, libsndio) — sound
-#   * shared-mime-info, xdg-user-dirs, libglib2.0-data — file associations,
-#     XDG directories and GLib schemas; GNOME misbehaves badly without them
-#   * dictionaries/spellcheck — used by desktop editors and office suites
-#   * publicsuffix — cookie-domain handling in browsers and GLib
-#   * util-linux-locales — locale data for the session
-#   * apparmor-profiles — confinement for desktop apps; keep the profiles
-#   * the build toolchain — DKMS rebuilds out-of-tree drivers (GPU, VirtualBox)
-#     against each new kernel, and needs gcc, make and the kernel headers
-packages_remove:
-  - ufw              # replaced by nftables
-  - debian-faq       # docs cruft
-  - doc-debian
-  - nmap             # recon tooling
-  - nmap-common
-  - inetutils-telnet
-
 # --- roles that assume a headless box -----------------------------------
+# Note: package purging is no longer part of this playbook at all — the
+# packages role installs and never removes — so this profile no longer has to
+# defend the graphics, audio and desktop stack from it.
 
 # Blacklists the audio, bluetooth, webcam and joystick kernel modules. Every
 # one of those is a device a desktop user expects to work.

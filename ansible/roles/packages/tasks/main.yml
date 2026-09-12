@@ -19,16 +19,5 @@
     update_cache: true
   when: packages_install | length > 0
 
-# state: absent + purge tolerates entries that aren't installed (apt acts only
-# on the ones present), mirroring the script's one-at-a-time purge.
-- name: Purge unwanted packages
-  ansible.builtin.apt:
-    name: "{{ packages_remove }}"
-    state: absent
-    purge: true
-  when: packages_remove | length > 0
-
-- name: Autoremove orphaned dependencies
-  ansible.builtin.apt:
-    autoremove: true
-    purge: true
+# This role deliberately has no removal step. See defaults/main.yml for why the
+# purge list and the autoremove that followed it were taken out.

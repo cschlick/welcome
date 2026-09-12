@@ -6,19 +6,28 @@
     - name: Gather installed-package facts
       ansible.builtin.package_facts:
 
-    - name: Assert install/purge outcomes
+    - name: Assert the base set is installed
       ansible.builtin.assert:
         quiet: true
         that:
-          # installed from packages_install
           - "'curl' in ansible_facts.packages"
           - "'jq' in ansible_facts.packages"
           - "'screen' in ansible_facts.packages"
           - "'tcpdump' in ansible_facts.packages"
           - "'ncurses-term' in ansible_facts.packages"
-          # purged: wamerican was pre-installed in prepare.yml, ufw never was
-          - "'wamerican' not in ansible_facts.packages"
-          - "'ufw' not in ansible_facts.packages"
+
+    # The role installs only. wamerican and ufw were pre-installed in
+    # prepare.yml and were both on the purge list this role used to carry;
+    # their survival is what proves no removal step came back.
+    - name: Assert the role removed nothing
+      ansible.builtin.assert:
+        quiet: true
+        fail_msg: >-
+          The packages role removed a pre-installed package. It must never
+          remove or purge anything — see roles/packages/defaults/main.yml.
+        that:
+          - "'wamerican' in ansible_facts.packages"
+          - "'ufw' in ansible_facts.packages"
 
     - name: Read the apt no-recommends drop-in
       ansible.builtin.slurp:

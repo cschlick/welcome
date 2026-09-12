@@ -20,9 +20,6 @@ disable_mdns_manage: false
 disable_cups_manage: false
 cloudinit_cleanup_manage: false
 
-# Install the useful base set, but never purge packages from a router.
-packages_remove: []
-
 # Read-only preflight requirements.
 router_require_ipv4_forwarding: true
 router_require_nftables: true

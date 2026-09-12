@@ -172,11 +172,11 @@ already a valid target for it without this, since the `packages` role installs
 
 ## The desktop profile
 
-The default `host` profile assumes a headless server: it purges the graphics,
-audio and peripheral stack, blacklists the matching kernel modules, and strips
-the account out of `audio`, `video`, `plugdev` and `netdev`. Applied to a
-machine running GNOME, that leaves a box with no session, no sound and a user
-locked out of its own hardware.
+The default `host` profile assumes nobody is sitting at the console: it
+blacklists the audio, bluetooth and webcam kernel modules, strips the account
+out of `audio`, `video`, `plugdev` and `netdev`, and moves networking off
+NetworkManager. Applied to a machine running GNOME, that leaves a user locked
+out of its own hardware on a box that may not come back on the network.
 
 The `desktop` profile keeps every control that does not assume an empty
 console:
@@ -189,13 +189,13 @@ WELCOME_PROFILE=desktop ./apply.sh -K            # on the machine itself
 It does **not** install GNOME. Install the desktop yourself (`apt install
 gnome-core`, `tasksel`, …); the profile hardens around whatever is there.
 
-Relative to the headless base it purges only `ufw`, the Debian docs and the
-recon tooling, and it turns off the roles that would break a seated user:
-`module_blacklist`, `group_prune`, `networkd` (NetworkManager owns the
-interfaces), `resolved`, `disable_cups`, `disable_mdns` and `mounts` (the
-`noexec` `/tmp`). nftables stays on, with 5353/udp opened so Avahi can discover
-printers and shares. Each decision is commented in
-`ansible/profiles/desktop.yml`.
+It turns off the roles that would break a seated user: `module_blacklist`,
+`group_prune`, `networkd` (NetworkManager owns the interfaces), `resolved`,
+`disable_cups`, `disable_mdns` and `mounts` (the `noexec` `/tmp`). nftables
+stays on, with 5353/udp opened so Avahi can discover printers and shares. Each
+decision is commented in `ansible/profiles/desktop.yml`.
+
+No profile removes packages: the `packages` role installs and never purges.
 
 ## The router profile
 
