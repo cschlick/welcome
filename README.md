@@ -128,6 +128,44 @@ task is `no_log: true`, keeping the token out of `logs/apply-*.log`.
 > ansible-vault edit ansible/vault.yml   # set greasewood_join_token: ""
 > ```
 
+## Claude Code configuration
+
+The `claude_config` role checks out the private
+[`cschlick/claude-config`](https://github.com/cschlick/claude-config)
+repository as `~user/.claude`, and fast-forwards it on every later run. It
+does **not** install Claude Code; do that by hand.
+
+The repository is private, so the role authenticates with a read-only GitHub
+deploy key held in the vault. Until `claude_config_deploy_key` is set, the role
+is skipped. One-time setup, on the controller:
+
+```bash
+ssh-keygen -t ed25519 -N '' -C welcome-claude-config -f ./cc-deploy
+# GitHub → cschlick/claude-config → Settings → Deploy keys → Add deploy key:
+# paste cc-deploy.pub and leave "Allow write access" unticked.
+{ echo 'claude_config_deploy_key: |'; sed 's/^/  /' cc-deploy; }  # prints the vault entry
+ansible-vault edit ansible/vault.yml   # paste it in; the | keeps the line breaks
+#   claude_config_deploy_key: |
+#     -----BEGIN OPENSSH PRIVATE KEY-----
+#     ...
+#     -----END OPENSSH PRIVATE KEY-----
+shred -u ./cc-deploy ./cc-deploy.pub
+```
+
+On each machine the key lands at `~/.ssh/claude_config_deploy_key`, and the
+checkout's `core.sshCommand` points at it, so a manual `git pull` in
+`~/.claude` works too. The deploy key is read-only, so pushing config changes
+still needs your own GitHub credentials.
+
+- **Existing `~/.claude`.** If Claude Code has already run, the role checks the
+  repository out around its runtime state (history, projects, sessions). Any
+  existing file the checkout would overwrite is moved to
+  `~/.claude.pre-welcome-<timestamp>/`, not deleted.
+- **Local changes.** Edited tracked files or unpushed commits are left alone.
+  The run reports that the checkout was not updated, and does not fail.
+
+To sync just this: `./apply.sh --tags claude`.
+
 ## Bootstrapping a remote server
 
 The remote must initially be reachable as `user` over SSH, with sudo access.

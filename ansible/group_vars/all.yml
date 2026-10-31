@@ -21,6 +21,12 @@ ssh_authorized_keys_exclusive: true  # remove keys not present in the vault
 # gw-* interface, so re-runs are safe. Empty (the role default) = install the
 # client without joining.
 
+# --- claude_config role ---
+# claude_config_deploy_key lives in encrypted ../vault.yml: a read-only GitHub
+# deploy key for the private cschlick/claude-config repo, which the role checks
+# out as ~user/.claude. Empty (the role default) = skip it. Claude Code itself
+# is never installed by this playbook. See roles/claude_config/defaults/main.yml.
+
 # --- accounts role ---
 # Passwords are deliberately outside scope: the accounts role never reads or
 # changes user's password. Set it securely through the console or `passwd`.

@@ -1,0 +1,101 @@
+---
+- name: Check out claude-config as ~/.claude
+  when: claude_config_deploy_key | length > 0
+  block:
+    - name: Look up the account's home directory
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ claude_config_user }}"
+
+    - name: Resolve claude-config paths
+      ansible.builtin.set_fact:
+        claude_config_home: "{{ ansible_facts.getent_passwd[claude_config_user][4] }}"
+
+    - name: Create the account's .ssh directory
+      ansible.builtin.file:
+        path: "{{ claude_config_home }}/{{ claude_config_key_file | dirname }}"
+        state: directory
+        owner: "{{ claude_config_user }}"
+        group: "{{ claude_config_user }}"
+        mode: "0700"
+
+    - name: Install the claude-config deploy key
+      ansible.builtin.copy:
+        content: "{{ claude_config_deploy_key | trim }}\n"
+        dest: "{{ claude_config_home }}/{{ claude_config_key_file }}"
+        owner: "{{ claude_config_user }}"
+        group: "{{ claude_config_user }}"
+        mode: "0600"
+      no_log: true
+
+    # A key pasted into the vault as a plain string loses its line breaks (and
+    # often its BEGIN/END lines), which ssh reports only as "error in libcrypto"
+    # from deep inside git. Check it here so the failure says what to fix.
+    # ssh-keygen -y prints the PUBLIC key, so nothing secret reaches the log.
+    - name: Check that the claude-config deploy key parses
+      ansible.builtin.command:
+        argv:
+          - ssh-keygen
+          - -y
+          - -f
+          - "{{ claude_config_home }}/{{ claude_config_key_file }}"
+      register: claude_config_key_check
+      changed_when: false
+      failed_when: false
+
+    - name: Report a malformed claude-config deploy key
+      ansible.builtin.fail:
+        msg: |-
+          claude_config_deploy_key in vault.yml is not a valid private key
+          ({{ claude_config_key_check.stderr | trim }}).
+          It must keep its line breaks and BEGIN/END lines, as a YAML block:
+            claude_config_deploy_key: |
+              -----BEGIN OPENSSH PRIVATE KEY-----
+              ...
+              -----END OPENSSH PRIVATE KEY-----
+          Generate that block from the key file with:
+            { echo 'claude_config_deploy_key: |'; sed 's/^/  /' cc-deploy; }
+      when: claude_config_key_check.rc != 0
+
+    # Runs git as the account through runuser rather than become_user: becoming
+    # an unprivileged user needs pipelining or setfacl for Ansible's temp files,
+    # and neither is guaranteed on a fresh machine.
+    - name: Check out or fast-forward claude-config
+      ansible.builtin.command:
+        argv:
+          - runuser
+          - -u
+          - "{{ claude_config_user }}"
+          - --
+          - env
+          - "HOME={{ claude_config_home }}"
+          - bash
+          - -c
+          - "{{ lookup('ansible.builtin.file', 'claude-config-sync.sh') }}"
+          - claude-config-sync
+          - "{{ claude_config_home }}/{{ claude_config_dir }}"
+          - "{{ claude_config_repo }}"
+          - "{{ claude_config_branch }}"
+          - "{{ claude_config_home }}/{{ claude_config_key_file }}"
+      register: claude_config_sync
+      changed_when: >-
+        claude_config_sync.stdout_lines | last
+        in ['STATUS=cloned', 'STATUS=adopted', 'STATUS=updated']
+
+    # Local edits or commits are left in place, not overwritten, and do not fail
+    # the run: the rest of the machine's setup should not hinge on them.
+    - name: Report a claude-config checkout that was left alone
+      ansible.builtin.debug:
+        msg: |-
+          {{ claude_config_home }}/{{ claude_config_dir }} was NOT updated
+          ({{ claude_config_sync.stdout_lines | last }}). Commit and push, or
+          discard, the local changes there, then re-run.
+          {{ claude_config_sync.stdout }}
+      when: >-
+        claude_config_sync.stdout_lines | last
+        in ['STATUS=dirty', 'STATUS=diverged']
+
+    - name: Report files moved aside when adopting ~/.claude
+      ansible.builtin.debug:
+        msg: "{{ claude_config_sync.stdout }}"
+      when: claude_config_sync.stdout_lines | last == 'STATUS=adopted'

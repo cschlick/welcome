@@ -1,0 +1,37 @@
+---
+# claude-config (git@github.com:cschlick/claude-config) is the Claude Code
+# configuration — settings, CLAUDE.md, skills — kept as a Git repository that
+# IS ~/.claude. This role checks it out for one account and fast-forwards it on
+# every later run. It does NOT install Claude Code itself; that stays manual.
+#
+# The repository is private, so a fresh machine needs a credential. That is a
+# read-only GitHub DEPLOY KEY scoped to this one repository, held in the
+# encrypted ../../vault.yml as claude_config_deploy_key. Empty (the default) =
+# skip the role entirely, so hosts without the key are unaffected.
+#
+# Create the key once, on the controller:
+#
+#   ssh-keygen -t ed25519 -N '' -C welcome-claude-config -f ./cc-deploy
+#   # GitHub -> cschlick/claude-config -> Settings -> Deploy keys -> Add,
+#   # paste cc-deploy.pub, leave "Allow write access" UNTICKED.
+#   { echo 'claude_config_deploy_key: |'; sed 's/^/  /' cc-deploy; }
+#   ansible-vault edit ansible/vault.yml   # paste the block printed above
+#   #   claude_config_deploy_key: |      <- the | keeps the line breaks
+#   #     -----BEGIN OPENSSH PRIVATE KEY-----
+#   #     ...
+#   #     -----END OPENSSH PRIVATE KEY-----
+#   shred -u ./cc-deploy ./cc-deploy.pub
+#
+# The repository this playbook lives in is public: the vault password is the
+# only thing protecting this key. Being read-only and scoped to one repository,
+# a leak exposes the config's contents and nothing else; revoke it on GitHub.
+claude_config_deploy_key: ""
+
+claude_config_user: user
+claude_config_repo: git@github.com:cschlick/claude-config.git
+# A BRANCH name. Updates are fast-forward only.
+claude_config_branch: main
+
+# Relative to the account's home directory.
+claude_config_dir: .claude
+claude_config_key_file: .ssh/claude_config_deploy_key
