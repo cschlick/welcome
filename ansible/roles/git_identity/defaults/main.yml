@@ -1,0 +1,8 @@
+---
+# Git author identity for the managed account, written to ~user/.gitconfig.
+# A fresh machine has none, so the first `git commit` fails with "Author
+# identity unknown". The email is GitHub's noreply address, so it is safe to
+# publish in commit metadata. Empty name or email = leave that setting alone.
+git_identity_user: user
+git_identity_name: cschlick
+git_identity_email: 16112328+cschlick@users.noreply.github.com

@@ -30,6 +30,8 @@
       tags: [ssh_workspace, workspace]
     - role: greasewood
       tags: [greasewood, vpn]
+    - role: git_identity
+      tags: [git_identity, git]
     # Checks out the private claude-config repo as ~/.claude. Skipped unless
     # claude_config_deploy_key is set in the vault. Does not install Claude.
     - role: claude_config

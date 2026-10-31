@@ -1,0 +1,30 @@
+---
+- name: Look up the account's home directory
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ git_identity_user }}"
+
+# scope: file writes the account's ~/.gitconfig directly. scope: global would
+# mean ~root/.gitconfig here, since the play runs as root.
+- name: Set the account's Git identity
+  community.general.git_config:
+    scope: file
+    file: "{{ ansible_facts.getent_passwd[git_identity_user][4] }}/.gitconfig"
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+  loop:
+    - { name: user.name, value: "{{ git_identity_name }}" }
+    - { name: user.email, value: "{{ git_identity_email }}" }
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.value | length > 0
+
+# Written as root, so a newly created file would be root-owned and unreadable
+# config for the account it belongs to.
+- name: Keep ~/.gitconfig owned by the account
+  ansible.builtin.file:
+    path: "{{ ansible_facts.getent_passwd[git_identity_user][4] }}/.gitconfig"
+    owner: "{{ git_identity_user }}"
+    group: "{{ git_identity_user }}"
+    mode: "0644"
+  when: (git_identity_name + git_identity_email) | length > 0
