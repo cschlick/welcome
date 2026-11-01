@@ -257,6 +257,11 @@ No profile removes packages: the `packages` role installs and never purges.
 
 ## The router profile
 
+It also installs Visual Studio Code from Microsoft's apt repository
+(`vscode_manage: true`), so it updates with every apply. The role stops the
+`code` package from adding a second copy of that repository, which would
+otherwise break `apt update` with conflicting `Signed-By` values.
+
 > **Router profile status:** This is an untested, unfinished stub. Do not use it
 > on an important router without console access, a verified backup, and careful
 > review of a check-mode run.

@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  role_name: vscode
+  author: cschlick
+  description: Install Visual Studio Code from Microsoft's apt repository
+  license: MIT
+  min_ansible_version: "2.15"
+dependencies: []

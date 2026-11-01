@@ -23,6 +23,9 @@
       tags: [nftables]
     - role: packages
       tags: [packages]
+    - role: vscode
+      when: vscode_manage | default(false)
+      tags: [vscode]
     - role: ghostty_terminfo
       tags: [ghostty_terminfo, terminfo]
     - role: ssh_workspace

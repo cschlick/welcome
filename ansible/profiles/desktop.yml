@@ -53,6 +53,10 @@ disable_mdns_manage: false
 # with mounts_manage=true once you know the machine's software tolerates it.
 mounts_manage: false
 
+# --- desktop software ---------------------------------------------------
+# Visual Studio Code, from Microsoft's apt repository. Off on headless hosts.
+vscode_manage: true
+
 # --- firewall -----------------------------------------------------------
 # nftables stays on: the input policy is still drop, SSH is still the only
 # inbound TCP. mDNS needs an explicit hole because multicast replies come from

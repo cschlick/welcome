@@ -1,0 +1,15 @@
+---
+# Visual Studio Code from Microsoft's apt repository, so it updates with the rest
+# of the system (system_upgrade upgrades it on every apply). Off by default — a
+# headless host has no use for an editor that needs a display; the desktop
+# profile turns it on.
+vscode_manage: false
+
+vscode_repo_url: https://packages.microsoft.com/repos/code
+vscode_key_url: https://packages.microsoft.com/keys/microsoft.asc
+# Microsoft publishes these architectures; the role maps Ansible's names onto
+# Debian's.
+vscode_architectures:
+  x86_64: amd64
+  aarch64: arm64
+  armv7l: armhf

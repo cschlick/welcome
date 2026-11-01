@@ -1,0 +1,42 @@
+---
+- name: Check that Microsoft publishes VS Code for this architecture
+  ansible.builtin.assert:
+    that: ansible_facts.architecture in vscode_architectures
+    fail_msg: >-
+      VS Code has no apt package for {{ ansible_facts.architecture }}.
+      Set vscode_manage=false for this host.
+    quiet: true
+
+# The code package's postinst adds its own copy of the Microsoft repository
+# unless told not to. Beside the one below, with a different Signed-By path,
+# apt then refuses every update with "Conflicting values set for option
+# Signed-By". Answer its debconf question before it is asked.
+- name: Stop the code package adding its own apt source
+  ansible.builtin.debconf:
+    name: code
+    question: code/add-microsoft-repo
+    vtype: boolean
+    value: "false"
+
+# deb822_repository needs python3-debian on the target.
+- name: Install the apt source module's dependency
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+
+- name: Add Microsoft's VS Code apt repository
+  ansible.builtin.deb822_repository:
+    name: vscode
+    types: deb
+    uris: "{{ vscode_repo_url }}"
+    suites: stable
+    components: main
+    architectures: "{{ vscode_architectures[ansible_facts.architecture] }}"
+    signed_by: "{{ vscode_key_url }}"
+  register: vscode_repo
+
+- name: Install VS Code
+  ansible.builtin.apt:
+    name: code
+    state: present
+    update_cache: "{{ vscode_repo is changed }}"
