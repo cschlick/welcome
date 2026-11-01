@@ -128,43 +128,57 @@ task is `no_log: true`, keeping the token out of `logs/apply-*.log`.
 > ansible-vault edit ansible/vault.yml   # set greasewood_join_token: ""
 > ```
 
-## Claude Code configuration
+## Claude Code and Codex configuration
 
-The `claude_config` role checks out the private
-[`cschlick/claude-config`](https://github.com/cschlick/claude-config)
-repository as `~user/.claude`, and fast-forwards it on every later run. It
-does **not** install Claude Code; do that by hand.
+The `config_repos` role checks out private config repositories as the tools'
+config directories, and fast-forwards them on every later run:
 
-The repository is private, so the role authenticates with a read-only GitHub
-deploy key held in the vault. Until `claude_config_deploy_key` is set, the role
-is skipped. One-time setup, on the controller:
+| Repository | Checked out as | Vault variable |
+| --- | --- | --- |
+| [`cschlick/claude-config`](https://github.com/cschlick/claude-config) | `~user/.claude` | `claude_config_deploy_key` |
+| [`cschlick/codex-config`](https://github.com/cschlick/codex-config) | `~user/.codex` | `codex_config_deploy_key` |
+
+It does **not** install Claude Code or Codex; do that by hand.
+
+The repositories are private, so each is fetched with its own GitHub deploy key held in the vault. A repository whose key is unset is skipped.
+GitHub refuses the same deploy key on two repositories, so make one per repo.
+One-time setup, on the controller (shown for claude-config):
 
 ```bash
-ssh-keygen -t ed25519 -N '' -C welcome-claude-config -f ./cc-deploy
+ssh-keygen -t ed25519 -N '' -C welcome-claude-config -f ./deploy
 # GitHub → cschlick/claude-config → Settings → Deploy keys → Add deploy key:
-# paste cc-deploy.pub and leave "Allow write access" unticked.
-{ echo 'claude_config_deploy_key: |'; sed 's/^/  /' cc-deploy; }  # prints the vault entry
+# paste deploy.pub, ticking "Allow write access" to push config changes from
+# the machine. Not under your account's SSH keys — that would grant access to every repository.
+{ echo 'claude_config_deploy_key: |'; sed 's/^/  /' deploy; }  # prints the vault entry
 ansible-vault edit ansible/vault.yml   # paste it in; the | keeps the line breaks
 #   claude_config_deploy_key: |
 #     -----BEGIN OPENSSH PRIVATE KEY-----
 #     ...
 #     -----END OPENSSH PRIVATE KEY-----
-shred -u ./cc-deploy ./cc-deploy.pub
+shred -u ./deploy ./deploy.pub
 ```
 
-On each machine the key lands at `~/.ssh/claude_config_deploy_key`, and the
-checkout's `core.sshCommand` points at it, so a manual `git pull` in
-`~/.claude` works too. The deploy key is read-only, so pushing config changes
-still needs your own GitHub credentials.
+To check where GitHub registered a key, `ssh -T -i <key> git@github.com`
+greets a deploy key with the repository (`Hi cschlick/claude-config!`) and an
+account key with just the username.
 
-- **Existing `~/.claude`.** If Claude Code has already run, the role checks the
-  repository out around its runtime state (history, projects, sessions). Any
-  existing file the checkout would overwrite is moved to
-  `~/.claude.pre-welcome-<timestamp>/`, not deleted.
+On each machine the keys land in `~/.ssh/` (`claude_config_deploy_key`,
+`codex_config_deploy_key`), and each checkout's `core.sshCommand` points at its
+key, so a manual `git pull` works too — and `git push`, when the key has write
+access.
+
+> A write-enabled key in this public repository's vault lets anyone who breaks
+> the vault password change that config, and its hooks and settings then run on
+> every machine. Use a strong vault password.
+
+- **Existing config directory.** If the tool has already run, the role checks
+  the repository out around its runtime state (history, sessions,
+  credentials). Any existing file the checkout would overwrite is moved to
+  `~/.claude.pre-welcome-<timestamp>/` (or `~/.codex.…`), not deleted.
 - **Local changes.** Edited tracked files or unpushed commits are left alone.
   The run reports that the checkout was not updated, and does not fail.
 
-To sync just this: `./apply.sh --tags claude`.
+To sync just these: `./apply.sh --tags config_repos`.
 
 ## Bootstrapping a remote server
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Check out (or fast-forward) the claude-config repository as ~/.claude.
-# Runs as the owning account. Usage: claude-config-sync.sh DIR REPO BRANCH KEY
+# Check out (or fast-forward) a config repository into DIR (e.g. ~/.claude).
+# Runs as the owning account. Usage: config-repo-sync.sh DIR REPO BRANCH KEY
 #
 # The last line of output is STATUS=<word>, which the role reads:
 #   cloned     DIR did not exist or was empty; fresh checkout
-#   adopted    DIR already held files (Claude Code had run); checked out in place
+#   adopted    DIR already held files (the tool had already run); checked out in place
 #   updated    fast-forwarded to the remote branch
 #   unchanged  already current
 #   dirty      tracked files have local edits; left alone
@@ -13,14 +13,14 @@ set -euo pipefail
 
 dir=$1 repo=$2 branch=$3 key=$4
 
-# Repo-local, so a later manual `git pull` in ~/.claude uses the same key.
+# Repo-local, so a later manual `git pull` in DIR uses the same key.
 ssh_command="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
 
 # No commit yet covers both a fresh directory and a first run that died after
 # `git init` (e.g. the fetch failed); either way, (re)do the initial checkout.
 if ! git -C "$dir" rev-parse -q --verify HEAD >/dev/null 2>&1; then
   mkdir -p "$dir"
-  # Claude Code keeps runtime state (history, projects, sessions) in ~/.claude.
+  # The tool keeps runtime state (history, sessions, credentials) in DIR too.
   # Initialise around it rather than cloning into it, which git refuses.
   if [ -z "$(ls -A "$dir")" ] || [ "$(ls -A "$dir")" = .git ]; then
     status=cloned
@@ -52,7 +52,7 @@ git config core.sshCommand "$ssh_command"
 git remote set-url origin "$repo"
 git fetch -q origin "$branch"
 
-# Untracked files are Claude Code's own runtime state and never block an update.
+# Untracked files are the tool's own runtime state and never block an update.
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
   git status --short --untracked-files=no
   echo "STATUS=dirty"

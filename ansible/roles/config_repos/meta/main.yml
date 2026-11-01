@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  role_name: config_repos
+  author: cschlick
+  description: Check out private tool-config repositories (~/.claude, ~/.codex)
+  license: MIT
+  min_ansible_version: "2.14"
+dependencies: []

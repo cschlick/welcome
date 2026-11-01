@@ -32,10 +32,11 @@
       tags: [greasewood, vpn]
     - role: git_identity
       tags: [git_identity, git]
-    # Checks out the private claude-config repo as ~/.claude. Skipped unless
-    # claude_config_deploy_key is set in the vault. Does not install Claude.
-    - role: claude_config
-      tags: [claude_config, claude]
+    # Checks out the private claude-config and codex-config repos as ~/.claude
+    # and ~/.codex. Each is skipped unless its deploy key is set in the vault.
+    # Does not install Claude Code or Codex.
+    - role: config_repos
+      tags: [config_repos, claude, codex]
     - role: auditd
       tags: [auditd]
     - role: journald

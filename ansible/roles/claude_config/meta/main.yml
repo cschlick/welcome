@@ -1,8 +1,0 @@
----
-galaxy_info:
-  role_name: claude_config
-  author: cschlick
-  description: Check out the claude-config repository as ~/.claude
-  license: MIT
-  min_ansible_version: "2.14"
-dependencies: []

@@ -1,0 +1,18 @@
+---
+- name: Look up the account's home directory
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ config_repos_user }}"
+
+- name: Resolve the account's home directory
+  ansible.builtin.set_fact:
+    config_repos_home: "{{ ansible_facts.getent_passwd[config_repos_user][4] }}"
+
+# The label keeps each entry's private key out of the loop output.
+- name: Check out each config repository
+  ansible.builtin.include_tasks: repo.yml
+  loop: "{{ config_repos }}"
+  loop_control:
+    loop_var: config_repo
+    label: "{{ config_repo.name }}"
+  when: config_repo.key | default('') | length > 0

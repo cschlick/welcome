@@ -1,0 +1,89 @@
+---
+- name: "{{ config_repo.name }} | Create the key's directory"
+  ansible.builtin.file:
+    path: "{{ config_repos_home }}/{{ config_repo.key_file | dirname }}"
+    state: directory
+    owner: "{{ config_repos_user }}"
+    group: "{{ config_repos_user }}"
+    mode: "0700"
+
+- name: "{{ config_repo.name }} | Install the deploy key"
+  ansible.builtin.copy:
+    content: "{{ config_repo.key | trim }}\n"
+    dest: "{{ config_repos_home }}/{{ config_repo.key_file }}"
+    owner: "{{ config_repos_user }}"
+    group: "{{ config_repos_user }}"
+    mode: "0600"
+  no_log: true
+
+# A key pasted into the vault as a plain string loses its line breaks (and
+# often its BEGIN/END lines), which ssh reports only as "error in libcrypto"
+# from deep inside git. Check it here so the failure says what to fix.
+# ssh-keygen -y prints the PUBLIC key, so nothing secret reaches the log.
+- name: "{{ config_repo.name }} | Check that the deploy key parses"
+  ansible.builtin.command:
+    argv:
+      - ssh-keygen
+      - -y
+      - -f
+      - "{{ config_repos_home }}/{{ config_repo.key_file }}"
+  register: config_repo_key_check
+  changed_when: false
+  failed_when: false
+
+- name: "{{ config_repo.name }} | Report a malformed deploy key"
+  ansible.builtin.fail:
+    msg: |-
+      The vaulted deploy key for {{ config_repo.name }} is not a valid private
+      key ({{ config_repo_key_check.stderr | trim }}).
+      It must keep its line breaks and BEGIN/END lines, as a YAML block:
+        <name>_deploy_key: |
+          -----BEGIN OPENSSH PRIVATE KEY-----
+          ...
+          -----END OPENSSH PRIVATE KEY-----
+      Generate that block from the key file with:
+        { echo '<name>_deploy_key: |'; sed 's/^/  /' deploy; }
+  when: config_repo_key_check.rc != 0
+
+# Runs git as the account through runuser rather than become_user: becoming
+# an unprivileged user needs pipelining or setfacl for Ansible's temp files,
+# and neither is guaranteed on a fresh machine.
+- name: "{{ config_repo.name }} | Check out or fast-forward"
+  ansible.builtin.command:
+    argv:
+      - runuser
+      - -u
+      - "{{ config_repos_user }}"
+      - --
+      - env
+      - "HOME={{ config_repos_home }}"
+      - bash
+      - -c
+      - "{{ lookup('ansible.builtin.file', 'config-repo-sync.sh') }}"
+      - config-repo-sync
+      - "{{ config_repos_home }}/{{ config_repo.dir }}"
+      - "{{ config_repo.repo }}"
+      - "{{ config_repo.branch | default('main') }}"
+      - "{{ config_repos_home }}/{{ config_repo.key_file }}"
+  register: config_repo_sync
+  changed_when: >-
+    config_repo_sync.stdout_lines | last
+    in ['STATUS=cloned', 'STATUS=adopted', 'STATUS=updated']
+
+# Local edits or commits are left in place, not overwritten, and do not fail
+# the run: the rest of the machine's setup should not hinge on them.
+- name: "{{ config_repo.name }} | Report a checkout that was left alone"
+  ansible.builtin.debug:
+    msg: |-
+      {{ config_repos_home }}/{{ config_repo.dir }} was NOT updated
+      ({{ config_repo_sync.stdout_lines | last }}). Commit and push, or
+      discard, the local changes there, then re-run.
+      {{ config_repo_sync.stdout }}
+  when: >-
+    config_repo_sync.stdout_lines | last
+    in ['STATUS=dirty', 'STATUS=diverged']
+
+- name: "{{ config_repo.name }} | Report files moved aside when adopting"
+  ansible.builtin.debug:
+    msg: "{{ config_repo_sync.stdout }}"
+  when: config_repo_sync.stdout_lines | last == 'STATUS=adopted'

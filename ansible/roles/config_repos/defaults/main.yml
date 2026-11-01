@@ -1,0 +1,50 @@
+---
+# Personal tool configuration kept as private Git repositories, each checked out
+# AS the tool's config directory — cschlick/claude-config is ~/.claude,
+# cschlick/codex-config is ~/.codex. This role checks each out for one account
+# and fast-forwards it on every later run. It does NOT install the tools
+# themselves; that stays manual.
+#
+# The repositories are private, so each needs a credential: a GitHub DEPLOY
+# KEY scoped to that one repository, held in the encrypted
+# ../../vault.yml. GitHub refuses the same key as a deploy key on two
+# repositories, so every entry has its own. An entry whose key is empty (the
+# default) is skipped, so hosts without it are unaffected.
+#
+# Adding a key, on the controller (repeat per repository):
+#
+#   ssh-keygen -t ed25519 -N '' -C welcome-<repo> -f ./deploy
+#   # GitHub -> cschlick/<repo> -> Settings -> Deploy keys -> Add deploy key,
+#   # paste deploy.pub. Tick "Allow write access" to push config changes from
+#   # the machine. NOT under your account's SSH keys: that would grant access
+#   # to every repository.
+#   { echo '<repo>_deploy_key: |'; sed 's/^/  /' deploy; }  # e.g. claude_config_deploy_key
+#   ansible-vault edit ansible/vault.yml   # paste the block printed above
+#   #   the | keeps the line breaks
+#   shred -u ./deploy ./deploy.pub
+#
+# The repository this playbook lives in is public: the vault password is the
+# only thing protecting these keys. Each is scoped to one repository, so a
+# leak exposes that config and nothing else — but a write-enabled key lets the
+# holder change it, and these configs (hooks, settings) run on every machine.
+# Use a strong vault password.
+claude_config_deploy_key: ""
+codex_config_deploy_key: ""
+
+config_repos_user: user
+
+# Each entry: name (label), repo, branch (fast-forward only), dir and key_file
+# (both relative to the account's home), key (the private key's contents).
+config_repos:
+  - name: claude-config
+    repo: git@github.com:cschlick/claude-config.git
+    branch: main
+    dir: .claude
+    key_file: .ssh/claude_config_deploy_key
+    key: "{{ claude_config_deploy_key }}"
+  - name: codex-config
+    repo: git@github.com:cschlick/codex-config.git
+    branch: main
+    dir: .codex
+    key_file: .ssh/codex_config_deploy_key
+    key: "{{ codex_config_deploy_key }}"
