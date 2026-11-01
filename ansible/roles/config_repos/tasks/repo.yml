@@ -83,6 +83,27 @@
     config_repo_sync.stdout_lines | last
     in ['STATUS=dirty', 'STATUS=diverged']
 
+# Every run, not only after a change: a setup that failed once must be retried,
+# and each repository's own README promises its script is safe to re-run. What
+# it changes is not visible from here, so it never reports a change itself.
+- name: "{{ config_repo.name }} | Run the repository's setup script"
+  ansible.builtin.command:
+    argv:
+      - runuser
+      - -u
+      - "{{ config_repos_user }}"
+      - --
+      - env
+      - "HOME={{ config_repos_home }}"
+      - bash
+      - -c
+      - cd "$1" && exec "./$2"
+      - config-repo-setup
+      - "{{ config_repos_home }}/{{ config_repo.dir }}"
+      - "{{ config_repo.setup }}"
+  changed_when: false
+  when: config_repo.setup | default('') | length > 0
+
 - name: "{{ config_repo.name }} | Report files moved aside when adopting"
   ansible.builtin.debug:
     msg: "{{ config_repo_sync.stdout }}"

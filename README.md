@@ -128,7 +128,7 @@ task is `no_log: true`, keeping the token out of `logs/apply-*.log`.
 > ansible-vault edit ansible/vault.yml   # set greasewood_join_token: ""
 > ```
 
-## Claude Code and Codex configuration
+## Claude Code, Codex and Devin configuration
 
 The `config_repos` role checks out private config repositories as the tools'
 config directories, and fast-forwards them on every later run:
@@ -137,8 +137,12 @@ config directories, and fast-forwards them on every later run:
 | --- | --- | --- |
 | [`cschlick/claude-config`](https://github.com/cschlick/claude-config) | `~user/.claude` | `claude_config_deploy_key` |
 | [`cschlick/codex-config`](https://github.com/cschlick/codex-config) | `~user/.codex` | `codex_config_deploy_key` |
+| [`cschlick/devin-config`](https://github.com/cschlick/devin-config) | `~user/.config/devin` | `devin_config_deploy_key` |
 
-It does **not** install Claude Code or Codex; do that by hand.
+It does **not** install Claude Code, Codex or Devin; do that by hand. An entry
+can name a `setup` script in its repository, which runs as the account after
+every sync: devin-config's `setup.sh` adds its `.gitconfig` to the global git
+config, as its README asks.
 
 The repositories are private, so each is fetched with its own GitHub deploy key held in the vault. A repository whose key is unset is skipped.
 GitHub refuses the same deploy key on two repositories, so make one per repo.
@@ -163,7 +167,7 @@ greets a deploy key with the repository (`Hi cschlick/claude-config!`) and an
 account key with just the username.
 
 On each machine the keys land in `~/.ssh/` (`claude_config_deploy_key`,
-`codex_config_deploy_key`), and each checkout's `core.sshCommand` points at its
+`codex_config_deploy_key`, `devin_config_deploy_key`), and each checkout's `core.sshCommand` points at its
 key, so a manual `git pull` works too — and `git push`, when the key has write
 access.
 
@@ -253,14 +257,14 @@ It turns off the roles that would break a seated user: `module_blacklist`,
 stays on, with 5353/udp opened so Avahi can discover printers and shares. Each
 decision is commented in `ansible/profiles/desktop.yml`.
 
-No profile removes packages: the `packages` role installs and never purges.
-
-## The router profile
-
 It also installs Visual Studio Code from Microsoft's apt repository
 (`vscode_manage: true`), so it updates with every apply. The role stops the
 `code` package from adding a second copy of that repository, which would
 otherwise break `apt update` with conflicting `Signed-By` values.
+
+No profile removes packages: the `packages` role installs and never purges.
+
+## The router profile
 
 > **Router profile status:** This is an untested, unfinished stub. Do not use it
 > on an important router without console access, a verified backup, and careful

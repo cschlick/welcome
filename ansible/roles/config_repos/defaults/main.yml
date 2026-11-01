@@ -1,7 +1,8 @@
 ---
 # Personal tool configuration kept as private Git repositories, each checked out
 # AS the tool's config directory — cschlick/claude-config is ~/.claude,
-# cschlick/codex-config is ~/.codex. This role checks each out for one account
+# cschlick/codex-config is ~/.codex, cschlick/devin-config is ~/.config/devin.
+# This role checks each out for one account
 # and fast-forwards it on every later run. It does NOT install the tools
 # themselves; that stays manual.
 #
@@ -30,11 +31,14 @@
 # Use a strong vault password.
 claude_config_deploy_key: ""
 codex_config_deploy_key: ""
+devin_config_deploy_key: ""
 
 config_repos_user: user
 
 # Each entry: name (label), repo, branch (fast-forward only), dir and key_file
-# (both relative to the account's home), key (the private key's contents).
+# (both relative to the account's home), key (the private key's contents), and
+# optionally setup: a script in the repository, run as the account from inside
+# the checkout after every sync. It must be safe to re-run.
 config_repos:
   - name: claude-config
     repo: git@github.com:cschlick/claude-config.git
@@ -48,3 +52,13 @@ config_repos:
     dir: .codex
     key_file: .ssh/codex_config_deploy_key
     key: "{{ codex_config_deploy_key }}"
+  # Its README asks for setup.sh after cloning: it adds the repository's
+  # .gitconfig (the cschlick identity, matching git_identity) to the global
+  # git config through include.path.
+  - name: devin-config
+    repo: git@github.com:cschlick/devin-config.git
+    branch: master
+    dir: .config/devin
+    key_file: .ssh/devin_config_deploy_key
+    key: "{{ devin_config_deploy_key }}"
+    setup: setup.sh

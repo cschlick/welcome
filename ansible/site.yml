@@ -35,11 +35,11 @@
       tags: [greasewood, vpn]
     - role: git_identity
       tags: [git_identity, git]
-    # Checks out the private claude-config and codex-config repos as ~/.claude
-    # and ~/.codex. Each is skipped unless its deploy key is set in the vault.
-    # Does not install Claude Code or Codex.
+    # Checks out the private claude-config, codex-config and devin-config repos
+    # as ~/.claude, ~/.codex and ~/.config/devin. Each is skipped unless its
+    # deploy key is set in the vault. Does not install the tools themselves.
     - role: config_repos
-      tags: [config_repos, claude, codex]
+      tags: [config_repos, claude, codex, devin]
     - role: auditd
       tags: [auditd]
     - role: journald
