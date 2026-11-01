@@ -5,6 +5,22 @@
 # profile turns it on.
 vscode_manage: false
 
+# Display backend. Recent VS Code runs as a native Wayland client by default,
+# and on GNOME (seen on 48) that loses window state: maximized windows on
+# other workspaces come back unmaximized when you switch to them, the same
+# family as https://github.com/microsoft/vscode/issues/341295. "x11" runs it
+# through XWayland instead, which does not. ~/.vscode/argv.json cannot set
+# this (it is not among its supported keys), so the role adds the flag to the
+# launchers and the `code` command. Empty = native default, and removes them.
+vscode_ozone_platform: x11
+
+# The package's launchers; overrides of the same name go in
+# /usr/local/share/applications, which XDG lists before /usr/share.
+vscode_desktop_files:
+  - com.microsoft.VSCode.desktop
+  - com.microsoft.VSCode.UrlHandler.desktop
+vscode_wrapper: /usr/local/bin/code
+
 vscode_repo_url: https://packages.microsoft.com/repos/code
 vscode_key_url: https://packages.microsoft.com/keys/microsoft.asc
 # Microsoft publishes these architectures; the role maps Ansible's names onto

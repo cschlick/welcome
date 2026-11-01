@@ -40,3 +40,55 @@
     name: code
     state: present
     update_cache: "{{ vscode_repo is changed }}"
+
+# Regenerated from the package's own files on every run, so upstream changes
+# to them carry through; only each Exec= line gains the flag.
+- name: Read VS Code's packaged launchers
+  ansible.builtin.slurp:
+    src: "/usr/share/applications/{{ item }}"
+  loop: "{{ vscode_desktop_files }}"
+  register: vscode_desktop_src
+  when: vscode_ozone_platform | length > 0
+
+- name: Create the local applications directory
+  ansible.builtin.file:
+    path: /usr/local/share/applications
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: vscode_ozone_platform | length > 0
+
+- name: Override the launchers to pass --ozone-platform
+  ansible.builtin.copy:
+    content: >-
+      {{ item.content | b64decode
+         | regex_replace('(?m)^(Exec=\S+)', '\1 --ozone-platform=' ~ vscode_ozone_platform) }}
+    dest: "/usr/local/share/applications/{{ item.item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ vscode_desktop_src.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: vscode_ozone_platform | length > 0
+
+# Ahead of /usr/bin/code on PATH, so a terminal launch matches the launcher.
+- name: Install the code wrapper that passes --ozone-platform
+  ansible.builtin.copy:
+    content: |
+      #!/bin/sh
+      # Managed by welcome (vscode role): see vscode_ozone_platform.
+      exec /usr/bin/code --ozone-platform={{ vscode_ozone_platform }} "$@"
+    dest: "{{ vscode_wrapper }}"
+    owner: root
+    group: root
+    mode: "0755"
+  when: vscode_ozone_platform | length > 0
+
+- name: Remove the --ozone-platform overrides
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ vscode_desktop_files | map('regex_replace', '^', '/usr/local/share/applications/') + [vscode_wrapper] }}"
+  when: vscode_ozone_platform | length == 0

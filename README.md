@@ -262,6 +262,14 @@ It also installs Visual Studio Code from Microsoft's apt repository
 `code` package from adding a second copy of that repository, which would
 otherwise break `apt update` with conflicting `Signed-By` values.
 
+VS Code runs through XWayland (`--ozone-platform=x11`), not as a native
+Wayland client. Native Wayland on GNOME loses window state: maximized windows
+on other workspaces come back unmaximized when you switch to them. The role
+adds the flag through overrides of VS Code's launchers in
+`/usr/local/share/applications/` and a `/usr/local/bin/code` wrapper, since
+`~/.vscode/argv.json` cannot set it. Set `vscode_ozone_platform: ""` to go
+back to native Wayland; the overrides are then removed.
+
 No profile removes packages: the `packages` role installs and never purges.
 
 ## The router profile
