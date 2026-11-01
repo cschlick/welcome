@@ -1,4 +1,41 @@
 ---
+# Retried: a transient DNS or network blip here used to fail the whole run.
+- name: Resolve the Greasewood branch to a commit
+  ansible.builtin.command:
+    argv:
+      - git
+      - ls-remote
+      - --exit-code
+      - "{{ greasewood_repo_url }}"
+      - "refs/heads/{{ greasewood_ref }}"
+  register: greasewood_remote
+  changed_when: false
+  retries: 3
+  delay: 10
+  until: greasewood_remote.rc == 0
+
+# pipx records the spec each package was installed from. Installing from the
+# commit, not the branch name, makes that spec say which commit is installed.
+- name: Read the installed Greasewood spec
+  ansible.builtin.command:
+    argv:
+      - pipx
+      - list
+      - --global
+      - --json
+  register: greasewood_pipx
+  changed_when: false
+
+- name: Work out the wanted Greasewood spec
+  ansible.builtin.set_fact:
+    greasewood_spec: >-
+      git+{{ greasewood_repo_url }}@{{ greasewood_remote.stdout.split()[0] }}
+    greasewood_installed_spec: >-
+      {{ (greasewood_pipx.stdout | from_json).venvs.greasewood.metadata.main_package.package_or_url
+         | default('') }}
+
+# The running daemon keeps the old code until it restarts; this role does not
+# restart it, since doing so could cut the connection a remote apply arrived on.
 - name: Install Greasewood globally
   ansible.builtin.command:
     argv:
@@ -6,8 +43,8 @@
       - install
       - --global
       - --force
-      - git+https://github.com/cschlick/greasewood.git@main
-  changed_when: true
+      - "{{ greasewood_spec }}"
+  when: greasewood_installed_spec != greasewood_spec
 
 # Skipped when the host already has a gw-* link, so a re-run never re-joins a
 # mesh this machine is on. To move a host to a different mesh, leave first.

@@ -1,4 +1,11 @@
 ---
+# Where the client is installed from. The branch is resolved to its current
+# commit on each run, and pipx reinstalls only when that commit differs from
+# the installed one — so an unchanged branch costs one `git ls-remote`, not a
+# rebuild under the running daemon.
+greasewood_repo_url: https://github.com/cschlick/greasewood.git
+greasewood_ref: main
+
 # Greasewood invite token used to join the mesh. Empty = install the client but
 # do not join.
 #
