@@ -4,26 +4,61 @@
     database: passwd
     key: "{{ git_identity_user }}"
 
-# scope: file writes the account's ~/.gitconfig directly. scope: global would
-# mean ~root/.gitconfig here, since the play runs as root.
-- name: Set the account's Git identity
-  community.general.git_config:
-    scope: file
-    file: "{{ ansible_facts.getent_passwd[git_identity_user][4] }}/.gitconfig"
-    name: "{{ item.name }}"
-    value: "{{ item.value }}"
-  loop:
-    - { name: user.name, value: "{{ git_identity_name }}" }
-    - { name: user.email, value: "{{ git_identity_email }}" }
+- name: Resolve the account's ~/.gitconfig
+  ansible.builtin.set_fact:
+    git_identity_file: "{{ ansible_facts.getent_passwd[git_identity_user][4] }}/.gitconfig"
+    git_identity_settings:
+      - { name: user.name, value: "{{ git_identity_name }}" }
+      - { name: user.email, value: "{{ git_identity_email }}" }
+
+# Read with --no-includes, so only the account's own file counts. Other config
+# included from it — devin-config's setup.sh adds one that sets the same
+# identity — would otherwise show each key twice. community.general.git_config
+# always reads with --includes, saw two values, and rewrote the file on every
+# run, which is why it is not used here. rc 1 = not set.
+- name: Read the account's Git identity
+  ansible.builtin.command:
+    argv:
+      - git
+      - config
+      - --file
+      - "{{ git_identity_file }}"
+      - --no-includes
+      - --get
+      - "{{ item.name }}"
+  loop: "{{ git_identity_settings }}"
   loop_control:
     label: "{{ item.name }}"
+  register: git_identity_current
+  changed_when: false
+  failed_when: git_identity_current.rc > 1
   when: item.value | length > 0
 
-# Written as root, so a newly created file would be root-owned and unreadable
-# config for the account it belongs to.
+# Written as the account, so a newly created file belongs to it.
+- name: Set the account's Git identity
+  ansible.builtin.command:
+    argv:
+      - runuser
+      - -u
+      - "{{ git_identity_user }}"
+      - --
+      - git
+      - config
+      - --file
+      - "{{ git_identity_file }}"
+      - "{{ item.item.name }}"
+      - "{{ item.item.value }}"
+  loop: "{{ git_identity_current.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when:
+    - item is not skipped
+    - item.stdout != item.item.value
+
+# Earlier versions of this role wrote the file as root.
 - name: Keep ~/.gitconfig owned by the account
   ansible.builtin.file:
-    path: "{{ ansible_facts.getent_passwd[git_identity_user][4] }}/.gitconfig"
+    path: "{{ git_identity_file }}"
     owner: "{{ git_identity_user }}"
     group: "{{ git_identity_user }}"
     mode: "0644"
