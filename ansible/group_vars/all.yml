@@ -26,10 +26,10 @@ ssh_authorized_keys_exclusive: true  # remove keys not present in the vault
 # GitHub noreply address). Override git_identity_name/git_identity_email here.
 
 # --- config_repos role ---
-# claude_config_deploy_key, codex_config_deploy_key and devin_config_deploy_key
-# live in encrypted ../vault.yml: GitHub deploy keys, one per private repo,
-# which the role checks out as ~user/.claude, ~user/.codex and
-# ~user/.config/devin. An empty key = skip that repo. The tools themselves are
+# claude_config_deploy_key, codex_config_deploy_key, devin_config_deploy_key and
+# vscode_config_deploy_key live in encrypted ../vault.yml: GitHub deploy keys,
+# one per private repo, which the role checks out as ~user/.claude,
+# ~user/.codex, ~user/.config/devin and (desktops only) ~user/.config/Code/User. An empty key = skip that repo. The tools themselves are
 # never installed by this playbook. See roles/config_repos/defaults/main.yml.
 
 # --- accounts role ---

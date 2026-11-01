@@ -49,8 +49,11 @@ fi
 
 cd "$dir"
 git config core.sshCommand "$ssh_command"
-git remote set-url origin "$repo"
+# A checkout initialised by hand may have no origin yet.
+git remote add origin "$repo" 2>/dev/null || git remote set-url origin "$repo"
 git fetch -q origin "$branch"
+# ...and so no upstream, which a manual `git pull` there needs.
+git branch -q --set-upstream-to="origin/$branch" "$branch" 2>/dev/null || true
 
 # Untracked files are the tool's own runtime state and never block an update.
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then

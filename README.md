@@ -128,7 +128,7 @@ task is `no_log: true`, keeping the token out of `logs/apply-*.log`.
 > ansible-vault edit ansible/vault.yml   # set greasewood_join_token: ""
 > ```
 
-## Claude Code, Codex and Devin configuration
+## Tool configuration repositories
 
 The `config_repos` role checks out private config repositories as the tools'
 config directories, and fast-forwards them on every later run:
@@ -138,8 +138,11 @@ config directories, and fast-forwards them on every later run:
 | [`cschlick/claude-config`](https://github.com/cschlick/claude-config) | `~user/.claude` | `claude_config_deploy_key` |
 | [`cschlick/codex-config`](https://github.com/cschlick/codex-config) | `~user/.codex` | `codex_config_deploy_key` |
 | [`cschlick/devin-config`](https://github.com/cschlick/devin-config) | `~user/.config/devin` | `devin_config_deploy_key` |
+| [`cschlick/vscode-config`](https://github.com/cschlick/vscode-config) | `~user/.config/Code/User` (desktops only) | `vscode_config_deploy_key` |
 
-It does **not** install Claude Code, Codex or Devin; do that by hand. An entry
+It does **not** install Claude Code, Codex or Devin; do that by hand. VS Code
+is installed by the `vscode` role, and its config is checked out only where that
+role runs; its `setup.sh` installs the extensions listed in `extensions.txt`. An entry
 can name a `setup` script in its repository, which runs as the account after
 every sync: devin-config's `setup.sh` adds its `.gitconfig` to the global git
 config, as its README asks.
@@ -167,7 +170,7 @@ greets a deploy key with the repository (`Hi cschlick/claude-config!`) and an
 account key with just the username.
 
 On each machine the keys land in `~/.ssh/` (`claude_config_deploy_key`,
-`codex_config_deploy_key`, `devin_config_deploy_key`), and each checkout's `core.sshCommand` points at its
+`codex_config_deploy_key`, `devin_config_deploy_key`, `vscode_config_deploy_key`), and each checkout's `core.sshCommand` points at its
 key, so a manual `git pull` works too — and `git push`, when the key has write
 access.
 

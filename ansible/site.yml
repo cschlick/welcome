@@ -39,7 +39,7 @@
     # as ~/.claude, ~/.codex and ~/.config/devin. Each is skipped unless its
     # deploy key is set in the vault. Does not install the tools themselves.
     - role: config_repos
-      tags: [config_repos, claude, codex, devin]
+      tags: [config_repos, claude, codex, devin, vscode]
     - role: auditd
       tags: [auditd]
     - role: journald

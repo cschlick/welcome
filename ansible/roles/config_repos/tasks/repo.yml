@@ -67,7 +67,7 @@
       - "{{ config_repos_home }}/{{ config_repo.key_file }}"
   register: config_repo_sync
   changed_when: >-
-    config_repo_sync.stdout_lines | last
+    (config_repo_sync.stdout_lines or [""]) | last
     in ['STATUS=cloned', 'STATUS=adopted', 'STATUS=updated']
 
 # Local edits or commits are left in place, not overwritten, and do not fail
@@ -76,11 +76,11 @@
   ansible.builtin.debug:
     msg: |-
       {{ config_repos_home }}/{{ config_repo.dir }} was NOT updated
-      ({{ config_repo_sync.stdout_lines | last }}). Commit and push, or
+      ({{ (config_repo_sync.stdout_lines or [""]) | last }}). Commit and push, or
       discard, the local changes there, then re-run.
       {{ config_repo_sync.stdout }}
   when: >-
-    config_repo_sync.stdout_lines | last
+    (config_repo_sync.stdout_lines or [""]) | last
     in ['STATUS=dirty', 'STATUS=diverged']
 
 # Every run, not only after a change: a setup that failed once must be retried,
@@ -107,4 +107,4 @@
 - name: "{{ config_repo.name }} | Report files moved aside when adopting"
   ansible.builtin.debug:
     msg: "{{ config_repo_sync.stdout }}"
-  when: config_repo_sync.stdout_lines | last == 'STATUS=adopted'
+  when: (config_repo_sync.stdout_lines or [""]) | last == 'STATUS=adopted'

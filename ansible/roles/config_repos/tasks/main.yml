@@ -15,4 +15,6 @@
   loop_control:
     loop_var: config_repo
     label: "{{ config_repo.name }}"
-  when: config_repo.key | default('') | length > 0
+  when:
+    - config_repo.enabled | default(true) | bool
+    - config_repo.key | default('') | length > 0
