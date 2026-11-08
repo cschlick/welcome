@@ -14,6 +14,9 @@ packages_install:
   - ncurses-term
   - pipx
   - wireguard-tools
+  # NFS client. Pulls in rpcbind, which listens on port 111; the nftables role
+  # keeps that off the network (inbound policy drop, SSH only).
+  - nfs-common
 
 # This role INSTALLS ONLY. It never removes or purges a package.
 #
